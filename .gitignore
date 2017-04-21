@@ -1,0 +1,5 @@
+.idea
+
+# Exclude go-deps
+pkg/darwin_amd64/golang.org/*
+src/golang.org/*
