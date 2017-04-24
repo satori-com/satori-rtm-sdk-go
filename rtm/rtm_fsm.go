@@ -95,7 +95,7 @@ func (rtm *RTM) initFSM() {
 		},
 	})
 
-	events := []string{"open", "close", "error", "start", "stop", "reconnect"}
+	events := []string{EVENT_OPEN, EVENT_CLOSED, EVENT_ERROR, EVENT_START, EVENT_STOP}
 	for _, event := range events {
 		func(event string) {
 			rtm.On(event, func(data interface{}) {

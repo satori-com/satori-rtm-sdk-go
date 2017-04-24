@@ -19,27 +19,27 @@
 // RTM Client allows to subscribe to the state changing events. An event occurs when the client
 // enters or leaves a state.
 //
-//   client.On("eventName", func(data interface{}){
+//   client.On(EVENT_NAME, func(data interface{}){
 //     logger.Info("Event occurred")
 //   })
 //
-// You can use the following event names to subscribe on:
+// You can use the following event consts to subscribe on:
 //
 //  // RTM client has STATE_STOPPED state when creating a new instance
-//  enterStopped
-//  leaveStopped
+//  EVENT_STOPPED
+//  EVENT_LEAVE_STOPPED
 //
 //  // STATE_CONNECTING
-//  enterConnecting
-//  leaveConnecting
+//  EVENT_CONNECTING
+//  EVENT_LEAVE_CONNECTING
 //
 //  // STATE_CONNECTED state means that client established connection and ready to publish/read/write/etc
-//  enterConnected
-//  leaveConnected
+//  EVENT_CONNECTED
+//  EVENT_LEAVE_CONNECTED
 //
 //  // Client changes state STATE_AWAITING when network connection is broken
-//  enterAwaiting
-//  leaveAwaiting
+//  EVENT_AWAITING
+//  EVENT_LEAVE_AWAITING
 //
 // RTM Client allows to use Event-Based model for other Events. Example:
 //
@@ -47,44 +47,44 @@
 //   if err != nil {
 //     logger.Fatal(err)
 //   }
-//   client.On("error", func(data interface{}){
+//   client.On(EVENT_ERROR, func(data interface{}){
 //     err := data.(RTMError)
 //     logger.Error(err)
 //   })
 //
-//   client.Once("authenticated", func(data interface{}){
+//   client.Once(EVENT_AUTHENTICATED, func(data interface{}){
 //     logger.Info("Successfully authenticated")
 //   })
 //
 // Or use multiple event handlers for the same event
 //
-//   client.On("error", func(data interface{}){
+//   client.On(EVENT_ERROR, func(data interface{}){
 //     err := data.(RTMError)
 //     if err.Code == ERROR_CODE_TRANSPORT {
 //       logger.Warn("Broken connection", err.Reason.Error())
 //     }
 //   })
 //
-//   client.On("error", func(data interface{}){
+//   client.On(EVENT_ERROR, func(data interface{}){
 //     err := data.(RTMError)
 //     if err.Code == ERROR_CODE_AUTHENTICATION {
 //       logger.Warn("Authentication error", err.Reason.Error())
 //     }
 //   })
 //
-// List of available events:
+// List of available event consts:
 //
-//   start, stop, open, error, dataError, authenticated
+//   EVENT_STOPPED, EVENT_LEAVE_STOPPED, EVENT_CONNECTING, EVENT_LEAVE_CONNECTING,
+//   EVENT_CONNECTED, EVENT_LEAVE_CONNECTED, EVENT_AWAITING, EVENT_LEAVE_AWAITING
 //
-//   enterStopped, leaveStopped, enterConnecting, leaveConnecting,
-//   enterConnected, leaveConnected, enterAwaiting, leaveAwaiting
+//   EVENT_START, EVENT_STOP, EVENT_CLOSED, EVENT_OPEN, EVENT_ERROR, EVENT_DATA_ERROR, EVENT_AUTHENTICATED
 //
 // ERRORS
 //
-// When subscribing to the "error" event, callback function will always get RTMError type
+// When subscribing to the EVENT_ERROR event, callback function will always get RTMError type
 // Cast variable to RTMError type and compare with the following types to determine type of Error
 //
-//   client.On("error", func(data interface{}){
+//   client.On(EVENT_ERROR, func(data interface{}){
 //     err := data.(RTMError)
 //     logger.Info(err.Code)
 //   })
@@ -115,15 +115,22 @@
 //
 // Each subscription has the same event-based model as client. You can subscribe to the following events:
 //
-//   subscribed, info, subscribeError, subscriptionError, unsubscribeError, data, unsubscribed, position
+//   EVENT_DATA, EVENT_SUBSCRIBED, EVENT_UNSUBSCRIBED, EVENT_POSITION, EVENT_INFO,
+//   EVENT_SUBSCRIBE_ERROR, EVENT_UNSUBSCRIBE_ERROR, EVENT_SUBSCRIPTION_ERROR,
 //
-// Once you subscribed you have to read the messages from the subscription. Otherwise your connection get stuck after
-// receiving 10000 messages until you start reading.
+// Set EVENT_DATA callback to get subscription messages
 //
-//   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{})
-//   for message := range sub.Data() {
-//     logger.Info("Got message:", string(message))
+//   // Example: Get messages and cast them to Message type
+//   type Message struct {
+//     Who   string    `json:"who"`
+//     Where []float32 `json:"where"`
 //   }
+//   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{})
+//   sub.On(subscription.EVENT_DATA, func(data interface{}){
+//     var message Message
+//     json.Unmarshal(data.(json.RawMessage), &message)
+//     logger.Info(message.Who, message.Where)
+//   })
 //
 // AUTH
 //
@@ -661,7 +668,7 @@ func (rtm *RTM) handleMessage(message pdu.RTMQuery) error {
 		if err != nil {
 			return err
 		}
-		sub.OnData(response)
+		sub.ProcessData(response)
 
 	case act == "rtm/subscription/info":
 		var response pdu.SubscriptionInfo
@@ -701,7 +708,7 @@ func (rtm *RTM) handleMessage(message pdu.RTMQuery) error {
 // for example, when the application enters or leaves the
 // connecting or connected states.
 func (rtm *RTM) Start() {
-	rtm.Fire("start", nil)
+	rtm.Fire(EVENT_START, nil)
 }
 
 func (rtm *RTM) connect() error {
@@ -725,7 +732,7 @@ func (rtm *RTM) connect() error {
 			err = rtm.handleMessage(message)
 			if err != nil {
 				logger.Error(err)
-				rtm.Fire("dataError", RTMError{
+				rtm.Fire(EVENT_DATA_ERROR, RTMError{
 					Code:   ERROR_CODE_PDU,
 					Reason: err,
 				})
@@ -739,16 +746,16 @@ func (rtm *RTM) connect() error {
 		if err != nil {
 			// Authentication error
 			logger.Error(err)
-			rtm.Fire("error", RTMError{
+			rtm.Fire(EVENT_ERROR, RTMError{
 				Code:   ERROR_CODE_AUTHENTICATION,
 				Reason: err,
 			})
 			return err
 		}
-		rtm.Fire("authenticated", nil)
+		rtm.Fire(EVENT_AUTHENTICATED, nil)
 	}
 
-	rtm.Fire("open", nil)
+	rtm.Fire(EVENT_OPEN, nil)
 
 	return nil
 }
@@ -761,7 +768,7 @@ func (rtm *RTM) connect() error {
 // You can use Event-Based model to define application functionality,
 // for example, when the application enters or leaves the stopped state.
 func (rtm *RTM) Stop() {
-	rtm.Fire("stop", nil)
+	rtm.Fire(EVENT_STOP, nil)
 }
 
 func (rtm *RTM) closeConnection() {
@@ -793,7 +800,7 @@ func (rtm *RTM) socketSend(action string, body interface{}, ack bool) (<-chan pd
 	}
 
 	if err != nil {
-		rtm.Fire("error", RTMError{
+		rtm.Fire(EVENT_ERROR, RTMError{
 			Code:   ERROR_CODE_TRANSPORT,
 			Reason: err,
 		})
@@ -806,7 +813,7 @@ func (rtm *RTM) socketSend(action string, body interface{}, ack bool) (<-chan pd
 func (rtm *RTM) socketRead() (pdu.RTMQuery, error) {
 	response, err := rtm.conn.Read()
 	if err != nil {
-		rtm.Fire("error", RTMError{
+		rtm.Fire(EVENT_ERROR, RTMError{
 			Code:   ERROR_CODE_TRANSPORT,
 			Reason: err,
 		})

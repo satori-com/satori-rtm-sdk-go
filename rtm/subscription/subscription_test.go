@@ -3,6 +3,7 @@ package subscription
 import (
 	"encoding/json"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -101,7 +102,11 @@ func TestDataChannel(t *testing.T) {
 		json.RawMessage("\"{}\""),
 		json.RawMessage("!@#123"),
 	}
-	sub.OnData(pdu.SubscriptionData{
+	msgC := make(chan string, 3)
+	sub.On("data", func(data interface{}) {
+		msgC <- string(data.(json.RawMessage))
+	})
+	sub.ProcessData(pdu.SubscriptionData{
 		Position:       "123",
 		Messages:       messages,
 		SubscriptionId: "test",
@@ -110,43 +115,14 @@ func TestDataChannel(t *testing.T) {
 	expected := []string{"hello", "\"{}\"", "!@#123"}
 	for i := 0; i < 3; i++ {
 		select {
-		case message := <-sub.Data():
-			if string(message) != expected[0] {
-				t.Fatal("Messages do not match. Expexted: 'test'. Actual: " + string(message))
+		case message := <-msgC:
+			if message != expected[0] {
+				t.Fatal("Messages do not match. Expexted: 'test'. Actual: " + message)
 			}
 			expected = expected[1:]
-		default:
-			t.Fatal("Failed to get message")
-		}
-	}
-}
-
-func TestDataChannelOverflow(t *testing.T) {
-	sub := New("reliable", RELIABLE, pdu.SubscribeBodyOpts{})
-	messages := []json.RawMessage{
-		json.RawMessage("hello"),
-	}
-
-	processed := make(chan bool)
-	var counter int
-overflow:
-	for counter = 0; counter <= MAX_QUEUE*2; counter++ {
-		go func() {
-			sub.OnData(pdu.SubscriptionData{
-				Position:       "123",
-				Messages:       messages,
-				SubscriptionId: "test",
-			})
-			processed <- true
-		}()
-		select {
-		case <-processed:
 		case <-time.After(100 * time.Millisecond):
-			break overflow
+			t.Fatal("Failed to get messages")
 		}
-	}
-	if len(sub.Data()) != MAX_QUEUE {
-		t.Fatal("MAX_QUEUE limit exceeded")
 	}
 }
 
@@ -259,5 +235,42 @@ func TestReliableSubscription(t *testing.T) {
 	json.Unmarshal(sub.SubscribePdu().Body, &subPdu)
 	if subPdu.Position != "321" {
 		t.Fatal("Position is wrong after connected")
+	}
+}
+
+func TestStructTransfer(t *testing.T) {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+	sub := New("test123", RELIABLE, pdu.SubscribeBodyOpts{})
+
+	occurred := make(chan bool)
+	sub.On("data", func(data interface{}) {
+		var msg Message
+		json.Unmarshal(data.(json.RawMessage), &msg)
+
+		if msg.Who != "zebra" || reflect.DeepEqual(&msg.Where, []float32{34.134358, -118.321506}) {
+			t.Fatal("Wrong decoded message")
+		}
+
+		occurred <- true
+	})
+
+	message, _ := json.Marshal(&Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
+	messages := []json.RawMessage{message}
+	sub.ProcessData(pdu.SubscriptionData{
+		Position:       "123",
+		Messages:       messages,
+		SubscriptionId: "test123",
+	})
+
+	select {
+	case <-occurred:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("Unable to transfer Struct")
 	}
 }

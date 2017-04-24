@@ -12,7 +12,7 @@ import (
 func TestWrongEndpoint(t *testing.T) {
 	client, _ := New("ws://wrong-host-name.www", "123", Options{})
 	event := make(chan bool)
-	client.Once("error", func(err interface{}) {
+	client.Once(EVENT_ERROR, func(err interface{}) {
 		if !strings.Contains(err.(error).Error(), "no such host") {
 			t.Fatal("Wrong error returned")
 		}
@@ -40,7 +40,7 @@ func TestWrongAuth(t *testing.T) {
 		AuthProvider: authProvider,
 	})
 	event := make(chan bool)
-	client.Once("error", func(err interface{}) {
+	client.Once(EVENT_ERROR, func(err interface{}) {
 		// Try to convert to AuthError
 		var conv pdu.Error
 		err = json.Unmarshal([]byte(err.(error).Error()), &conv)
@@ -72,7 +72,7 @@ func TestClientDisconnect(t *testing.T) {
 	}
 	event := make(chan bool)
 	// Multiple event handler
-	client.On("enterConnected", func(interface{}) {
+	client.On(EVENT_CONNECTED, func(interface{}) {
 		event <- true
 	})
 	defer client.Stop()

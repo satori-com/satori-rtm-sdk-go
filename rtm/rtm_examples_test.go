@@ -1,6 +1,7 @@
 package rtm_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
@@ -27,7 +28,7 @@ func ExampleRTM_Publish() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -48,7 +49,7 @@ func ExampleRTM_Publish_types() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -89,7 +90,7 @@ func ExampleRTM_PublishAck_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -115,7 +116,7 @@ func ExampleRTM_PublishAck_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	client.On("error", func(data interface{}) {
+	client.On(rtm.EVENT_CONNECTED, func(data interface{}) {
 		err := data.(rtm.RTMError)
 		logger.Error(err)
 	})
@@ -123,7 +124,7 @@ func ExampleRTM_PublishAck_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -148,7 +149,7 @@ func ExampleRTM_Search() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -181,7 +182,7 @@ func ExampleRTM_Write_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -206,7 +207,7 @@ func ExampleRTM_Write_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	client.On("error", func(data interface{}) {
+	client.On(rtm.EVENT_CONNECTED, func(data interface{}) {
 		err := data.(rtm.RTMError)
 		logger.Error(err)
 	})
@@ -215,7 +216,7 @@ func ExampleRTM_Write_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -246,7 +247,7 @@ func ExampleRTM_Read_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -275,7 +276,7 @@ func ExampleRTM_Read_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	client.On("error", func(data interface{}) {
+	client.On(rtm.EVENT_ERROR, func(data interface{}) {
 		err := data.(rtm.RTMError)
 		logger.Error(err)
 	})
@@ -283,7 +284,7 @@ func ExampleRTM_Read_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -321,12 +322,16 @@ func ExampleRTM_Subscribe() {
 			Age:   10,
 		},
 	})
+	sub.On(subscription.EVENT_DATA, func(data interface{}) {
+		message := string(data.(json.RawMessage))
+		logger.Info(message)
+	})
 
 	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once("enterConnected", func(data interface{}) {
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
 		connected <- true
 	})
 	<-connected
@@ -341,10 +346,8 @@ func ExampleRTM_Subscribe() {
 		}
 	}()
 
-	for {
-		message := <-sub.Data()
-		fmt.Println("Got message: " + string(message))
-	}
+	// Exit after 10 seconds
+	<-time.After(10 * time.Second)
 }
 
 func ExampleRTM() {
@@ -358,11 +361,11 @@ func ExampleRTM() {
 	}
 
 	authEvent := make(chan bool)
-	client.Once("authenticated", func(data interface{}) {
+	client.Once(rtm.EVENT_AUTHENTICATED, func(data interface{}) {
 		logger.Info("Succesfully authenticated")
 		authEvent <- true
 	})
-	client.On("error", func(err interface{}) {
+	client.On(rtm.EVENT_ERROR, func(err interface{}) {
 		logger.Error(err.(error))
 		authEvent <- true
 	})

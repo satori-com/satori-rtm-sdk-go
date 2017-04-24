@@ -22,11 +22,17 @@ import (
 )
 
 const (
-	// Maximal queue of incoming messages. If the queue is full, no new messages will be read from the Socket.
-	MAX_QUEUE = 10000
-
 	STATE_UNSUBSCRIBED = 0
 	STATE_SUBSCRIBED   = 1
+
+	EVENT_DATA               = "data"
+	EVENT_SUBSCRIBED         = "subscribed"
+	EVENT_UNSUBSCRIBED       = "unsubscribed"
+	EVENT_POSITION           = "position"
+	EVENT_INFO               = "info"
+	EVENT_SUBSCRIBE_ERROR    = "subscribeError"
+	EVENT_UNSUBSCRIBE_ERROR  = "unsubscribeError"
+	EVENT_SUBSCRIPTION_ERROR = "subscriptionError"
 )
 
 var (
@@ -83,7 +89,6 @@ type Mode struct {
 type Subscription struct {
 	state          int
 	subscriptionId string
-	channel        chan json.RawMessage
 	mode           Mode
 	position       string
 	body           pdu.SubscribeBody
@@ -111,7 +116,6 @@ func New(subscriptionId string, m Mode, opts pdu.SubscribeBodyOpts) *Subscriptio
 	}
 	s.state = STATE_UNSUBSCRIBED
 	s.mode = m
-	s.channel = make(chan json.RawMessage, MAX_QUEUE)
 	s.subscriptionId = subscriptionId
 	s.position = ""
 
@@ -129,11 +133,6 @@ func New(subscriptionId string, m Mode, opts pdu.SubscribeBodyOpts) *Subscriptio
 	}
 
 	return s
-}
-
-// Gets data from the subscription
-func (s *Subscription) Data() <-chan json.RawMessage {
-	return s.channel
 }
 
 // Gets PDU to subscribe
@@ -170,7 +169,7 @@ func (s *Subscription) OnSubscribe(data pdu.SubscribeOk) {
 	s.trackPosition(data.Position)
 	s.state = STATE_SUBSCRIBED
 	s.body.Position = ""
-	s.Fire("subscribed", data)
+	s.Fire(EVENT_SUBSCRIBED, data)
 
 	logger.Info("Subscription '" + s.subscriptionId + "' is subscribed now")
 }
@@ -181,14 +180,14 @@ func (s *Subscription) OnDisconnect() {
 
 func (s *Subscription) OnInfo(data pdu.SubscriptionInfo) {
 	s.trackPosition(data.Position)
-	s.Fire("info", data)
+	s.Fire(EVENT_INFO, data)
 
 	logger.Warn("Falling behind for '" + s.subscriptionId + "'. Fast forward subscription")
 }
 
 func (s *Subscription) OnSubscribeError(data pdu.SubscribeError) {
 	s.markUnsubscribe()
-	s.Fire("subscribeError", data)
+	s.Fire(EVENT_SUBSCRIBE_ERROR, data)
 
 	logger.Warn("Error occured when subscribing to '" + s.subscriptionId + "'")
 }
@@ -196,24 +195,18 @@ func (s *Subscription) OnSubscribeError(data pdu.SubscribeError) {
 func (s *Subscription) OnSubscriptionError(data pdu.SubscriptionError) {
 	s.trackPosition(data.Position)
 	s.markUnsubscribe()
-	s.Fire("subscriptionError", data)
+	s.Fire(EVENT_SUBSCRIPTION_ERROR, data)
 
 	logger.Warn("Subscription error for '" + s.subscriptionId + "'")
 }
 
 func (s *Subscription) OnUnsubscribeError(data pdu.UnsubscribeError) {
-	s.Fire("unsubscribeError", data)
+	s.Fire(EVENT_UNSUBSCRIBE_ERROR, data)
 	logger.Warn("Error occured when unsubscribing from '" + s.subscriptionId + "'")
 }
 
-func (s *Subscription) OnData(data pdu.SubscriptionData) {
+func (s *Subscription) ProcessData(data pdu.SubscriptionData) {
 	for _, message := range data.Messages {
-		// @Warning
-		// Sending messages can be locked if the user reads slower than the messages rps
-		// "Channel" is a buffered channel with the MAX_QUEUE size
-		s.channel <- message
-
-		// Allow user to use several ways how to get data. Via channel of using Observer event
 		s.Fire("data", message)
 	}
 }
@@ -222,7 +215,7 @@ func (s *Subscription) OnData(data pdu.SubscriptionData) {
 func (s *Subscription) markUnsubscribe() {
 	if s.state == STATE_SUBSCRIBED {
 		s.state = STATE_UNSUBSCRIBED
-		s.Fire("unsubscribed", nil)
+		s.Fire(EVENT_UNSUBSCRIBED, nil)
 	}
 }
 
@@ -232,7 +225,7 @@ func (s *Subscription) trackPosition(position string) {
 		s.position = position
 	}
 
-	s.Fire("position", position)
+	s.Fire(EVENT_POSITION, position)
 }
 
 // Gets current subscription state
