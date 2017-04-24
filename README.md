@@ -1,6 +1,10 @@
 Golang SDK for Satori Platform
 ============================================================
 
+[![GitHub tag](https://img.shields.io/github/tag/satori-com/satori-rtm-sdk-go.svg)]() [![GoDoc Widget]][GoDoc]
+
+<img src="https://cdn.satori.com/assets/utilities/Satori_Landscape_Logo_LightBckgnd.png" height="150">
+
 Use the Go SDK for the Satori platform to create server-based applications that use the RTM to publish and subscribe.  
 Follow https://www.satori.com/ to meet with Satori platform.
 
@@ -20,8 +24,6 @@ import "github.com/satori-com/satori-rtm-sdk-go/rtm"
 
 You can view the latest Go SDK documentation here:
 https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm
-
-All examples in the documentation are go-playable. 
 
 Documentation generates automatically during 1 hour after pushing to master.  
 Read more about the GODOC service: https://godoc.org/-/about
@@ -82,3 +84,7 @@ $ CREDENTIALS=/full/path/to/credentials.json go test ./src/github.com/satori-com
 
 Use the `-cover` flag to get Coverage report. The `-coverprofile` flag produces debug profile file that
 allows to analyse untested parts of SDK.
+
+[GoDoc]: https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm
+[GoDoc Widget]: https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm?status.svg
+[logo]: https://cdn.satori.com/assets/utilities/Satori_Landscape_Logo_LightBckgnd.png "Satori"
