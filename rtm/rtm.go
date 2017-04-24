@@ -554,12 +554,12 @@ func (rtm *RTM) processSubscription(sub *subscription.Subscription) (*subscripti
 				rtm.subscriptions.list[subscriptionId] = sub
 
 				json.Unmarshal(data.Body, &response)
-				sub.OnSubscribe(response)
+				sub.ProcessSubscribe(response)
 			} else if pdu.GetResponseCode(data) == pdu.CODE_ERROR_REQUEST {
 				var response pdu.SubscribeError
 				json.Unmarshal(data.Body, &response)
 
-				sub.OnSubscribeError(response)
+				sub.ProcessSubscribeError(response)
 			}
 
 		}()
@@ -586,7 +586,7 @@ func (rtm *RTM) subscribeAll() error {
 
 func (rtm *RTM) disconnectAll() {
 	for _, sub := range rtm.subscriptions.list {
-		sub.OnDisconnect()
+		sub.ProcessDisconnect()
 	}
 }
 
@@ -617,7 +617,7 @@ func (rtm *RTM) Unsubscribe(subscriptionId string) <-chan UnsunscribeResponse {
 				var response pdu.UnsubscribeBodyResponse
 				json.Unmarshal(message.Body, &response)
 
-				sub.OnDisconnect()
+				sub.ProcessUnsubscribe(response)
 				rtm.subscriptions.mutex.Lock()
 				defer rtm.subscriptions.mutex.Unlock()
 				delete(rtm.subscriptions.list, response.SubscriptionId)
@@ -629,7 +629,7 @@ func (rtm *RTM) Unsubscribe(subscriptionId string) <-chan UnsunscribeResponse {
 			} else {
 				var response pdu.UnsubscribeError
 				json.Unmarshal(message.Body, &response)
-				sub.OnUnsubscribeError(response)
+				sub.ProcessUnsubscribeError(response)
 
 				err := pdu.GetResponseError(message)
 				retCh <- UnsunscribeResponse{
@@ -680,7 +680,7 @@ func (rtm *RTM) handleMessage(message pdu.RTMQuery) error {
 		if err != nil {
 			return err
 		}
-		sub.OnInfo(response)
+		sub.ProcessInfo(response)
 	case act == "rtm/subscription/error":
 		var response pdu.SubscriptionError
 		err := json.Unmarshal(message.Body, &response)
@@ -691,7 +691,7 @@ func (rtm *RTM) handleMessage(message pdu.RTMQuery) error {
 		if err != nil {
 			return err
 		}
-		sub.OnSubscriptionError(response)
+		sub.ProcessSubscriptionError(response)
 	}
 
 	rtm.Fire(message.Action, message)

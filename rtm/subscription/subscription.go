@@ -24,15 +24,6 @@ import (
 const (
 	STATE_UNSUBSCRIBED = 0
 	STATE_SUBSCRIBED   = 1
-
-	EVENT_DATA               = "data"
-	EVENT_SUBSCRIBED         = "subscribed"
-	EVENT_UNSUBSCRIBED       = "unsubscribed"
-	EVENT_POSITION           = "position"
-	EVENT_INFO               = "info"
-	EVENT_SUBSCRIBE_ERROR    = "subscribeError"
-	EVENT_UNSUBSCRIBE_ERROR  = "unsubscribeError"
-	EVENT_SUBSCRIPTION_ERROR = "subscriptionError"
 )
 
 var (
@@ -165,7 +156,7 @@ func (s *Subscription) UnsubscribePdu() pdu.RTMQuery {
 	return query
 }
 
-func (s *Subscription) OnSubscribe(data pdu.SubscribeOk) {
+func (s *Subscription) ProcessSubscribe(data pdu.SubscribeOk) {
 	s.trackPosition(data.Position)
 	s.state = STATE_SUBSCRIBED
 	s.body.Position = ""
@@ -174,33 +165,37 @@ func (s *Subscription) OnSubscribe(data pdu.SubscribeOk) {
 	logger.Info("Subscription '" + s.subscriptionId + "' is subscribed now")
 }
 
-func (s *Subscription) OnDisconnect() {
-	s.markUnsubscribe()
+func (s *Subscription) ProcessDisconnect() {
+	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 }
 
-func (s *Subscription) OnInfo(data pdu.SubscriptionInfo) {
+func (s *Subscription) ProcessInfo(data pdu.SubscriptionInfo) {
 	s.trackPosition(data.Position)
 	s.Fire(EVENT_INFO, data)
 
 	logger.Warn("Falling behind for '" + s.subscriptionId + "'. Fast forward subscription")
 }
 
-func (s *Subscription) OnSubscribeError(data pdu.SubscribeError) {
-	s.markUnsubscribe()
+func (s *Subscription) ProcessSubscribeError(data pdu.SubscribeError) {
+	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 	s.Fire(EVENT_SUBSCRIBE_ERROR, data)
 
 	logger.Warn("Error occured when subscribing to '" + s.subscriptionId + "'")
 }
 
-func (s *Subscription) OnSubscriptionError(data pdu.SubscriptionError) {
+func (s *Subscription) ProcessSubscriptionError(data pdu.SubscriptionError) {
 	s.trackPosition(data.Position)
-	s.markUnsubscribe()
+	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 	s.Fire(EVENT_SUBSCRIPTION_ERROR, data)
 
 	logger.Warn("Subscription error for '" + s.subscriptionId + "'")
 }
 
-func (s *Subscription) OnUnsubscribeError(data pdu.UnsubscribeError) {
+func (s *Subscription) ProcessUnsubscribe(data pdu.UnsubscribeBodyResponse) {
+	s.markUnsubscribe(data)
+}
+
+func (s *Subscription) ProcessUnsubscribeError(data pdu.UnsubscribeError) {
 	s.Fire(EVENT_UNSUBSCRIBE_ERROR, data)
 	logger.Warn("Error occured when unsubscribing from '" + s.subscriptionId + "'")
 }
@@ -211,11 +206,10 @@ func (s *Subscription) ProcessData(data pdu.SubscriptionData) {
 	}
 }
 
-// Marks current subscription as "unsubscribed"
-func (s *Subscription) markUnsubscribe() {
+func (s *Subscription) markUnsubscribe(data pdu.UnsubscribeBodyResponse) {
 	if s.state == STATE_SUBSCRIBED {
 		s.state = STATE_UNSUBSCRIBED
-		s.Fire(EVENT_UNSUBSCRIBED, nil)
+		s.Fire(EVENT_UNSUBSCRIBED, data)
 	}
 }
 

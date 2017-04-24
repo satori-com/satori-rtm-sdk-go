@@ -322,9 +322,64 @@ func ExampleRTM_Subscribe() {
 			Age:   10,
 		},
 	})
-	sub.On(subscription.EVENT_DATA, func(data interface{}) {
-		message := string(data.(json.RawMessage))
-		logger.Info(message)
+	sub.OnData(func(message json.RawMessage) {
+		logger.Info(string(message))
+	})
+
+	client.Start()
+
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+		connected <- true
+	})
+	<-connected
+
+	// Send random messages to the channel
+	go func() {
+		for {
+			client.Publish("<your-channel>", Message{
+				Id: rand.Intn(10),
+			})
+			time.Sleep(200 * time.Millisecond)
+		}
+	}()
+
+	// Exit after 10 seconds
+	<-time.After(10 * time.Second)
+}
+
+func ExampleRTM_Subscribe_processErrors() {
+	type Message struct {
+		Id int
+	}
+	authProvider := auth.New("<your-role>", "<your-rolekey>")
+	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+		AuthProvider: authProvider,
+	})
+
+	sub, _ := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{
+		Filter: "SELECT * FROM `test`",
+		History: pdu.SubscribeHistory{
+			Count: 1,
+			Age:   10,
+		},
+	})
+	sub.OnData(func(message json.RawMessage) {
+		// Got message
+		logger.Info(string(message))
+	})
+	sub.OnInfo(func(info pdu.SubscriptionInfo) {
+		// Got "subscription/info" from RTM
+		logger.Warn(info)
+	})
+	sub.OnSubscriptionError(func(err pdu.SubscriptionError) {
+		// Got "subscription/error" from RTM
+		logger.Error(errors.New(err.Error + "; " + err.Reason))
+	})
+	sub.OnUnsubscribed(func(unsub pdu.UnsubscribeBodyResponse) {
+		// Successfully unsubscribed
+		logger.Info(unsub)
 	})
 
 	client.Start()

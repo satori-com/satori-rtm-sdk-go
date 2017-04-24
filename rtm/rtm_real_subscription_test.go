@@ -30,9 +30,8 @@ func TestWrongPosition(t *testing.T) {
 	})
 
 	event := make(chan bool)
-	sub.Once("subscribeError", func(err interface{}) {
-		data := err.(pdu.SubscribeError)
-		if data.Error != "invalid_format" {
+	sub.OnceSubscribeError(func(err pdu.SubscribeError) {
+		if err.Error != "invalid_format" {
 			t.Fatal("Wrong subscription error")
 		}
 		event <- true
@@ -44,7 +43,7 @@ func TestWrongPosition(t *testing.T) {
 	}
 
 	sub, _ = client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{})
-	sub.Once("subscribed", func(err interface{}) {
+	sub.OnceSubscribed(func(sok pdu.SubscribeOk) {
 		event <- true
 	})
 	select {
@@ -73,11 +72,11 @@ func TestCachedOverride(t *testing.T) {
 	}
 	eventC := make(chan bool)
 	errC := make(chan error)
-	sub.Once("subscribed", func(data interface{}) {
+	sub.OnceSubscribed(func(sok pdu.SubscribeOk) {
 		eventC <- true
 	})
-	sub.Once("error", func(data interface{}) {
-		errC <- data.(error)
+	sub.OnceSubscribeError(func(err pdu.SubscribeError) {
+		errC <- errors.New(err.Error + "; " + err.Reason)
 	})
 
 	defer client.Stop()
@@ -114,7 +113,7 @@ func TestMultipleSubscription(t *testing.T) {
 		Position: "wrong_position",
 	})
 	errC := make(chan bool)
-	sub1.Once("error", func(interface{}) {
+	sub1.OnceSubscribeError(func(err pdu.SubscribeError) {
 		errC <- true
 	})
 	go func() {
@@ -130,7 +129,7 @@ func TestMultipleSubscription(t *testing.T) {
 		Filter: "SELECT COUNT(*) FROM `test`",
 	})
 	event := make(chan bool)
-	sub2.Once("subscribed", func(interface{}) {
+	sub2.OnceSubscribed(func(sok pdu.SubscribeOk) {
 		event <- true
 	})
 	go func() {
@@ -145,7 +144,7 @@ func TestMultipleSubscription(t *testing.T) {
 	sub3, _ := client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{
 		Position: "wrong_position",
 	})
-	sub3.Once("error", func(interface{}) {
+	sub3.OnceSubscribeError(func(err pdu.SubscribeError) {
 		errC <- true
 	})
 
@@ -188,9 +187,9 @@ func TestSimpleSubscription(t *testing.T) {
 	sub, _ := client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{})
 
 	expected := []int{0, 1, 2}
-	sub.On(subscription.EVENT_DATA, func(data interface{}) {
-		actual, err := strconv.Atoi(string(data.(json.RawMessage)))
-		if err != nil || expected[0] != actual {
+	sub.OnData(func(message json.RawMessage) {
+		i, _ := strconv.Atoi(string(message))
+		if expected[0] != i {
 			t.Fatal("Wrong message order or wrong message")
 		}
 		expected = expected[1:]
@@ -229,10 +228,9 @@ func TestSubscriptionFilter(t *testing.T) {
 	})
 
 	expected := []string{"{\"test\":1}", "{\"test\":3}"}
-	sub.On(subscription.EVENT_DATA, func(data interface{}) {
-		msg := string(data.(json.RawMessage))
-		if expected[0] != msg {
-			err = errors.New("Wrong actiual data. Expected: " + expected[0] + " Actual: " + msg)
+	sub.OnData(func(message json.RawMessage) {
+		if expected[0] != string(message) {
+			err = errors.New("Wrong actiual data. Expected: " + expected[0] + " Actual: " + string(message))
 		}
 
 		expected = expected[1:]
@@ -264,14 +262,14 @@ func TestSubscriptionAfterDisconnect(t *testing.T) {
 	client.Start()
 
 	sub, _ := client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{})
-	message := make(chan bool)
+	msgC := make(chan bool)
 	expected := []string{"1", "2"}
-	sub.On(subscription.EVENT_DATA, func(data interface{}) {
-		if string(data.(json.RawMessage)) != expected[0] {
+	sub.OnData(func(message json.RawMessage) {
+		if string(message) != expected[0] {
 			t.Fatal("Wrong subscription message")
 		}
 		expected = expected[1:]
-		message <- true
+		msgC <- true
 	})
 	err = waitSubscribed(sub)
 	if err != nil {
@@ -280,7 +278,7 @@ func TestSubscriptionAfterDisconnect(t *testing.T) {
 
 	go client.Publish(channel, 1)
 	select {
-	case <-message:
+	case <-msgC:
 	case <-time.After(5 * time.Second):
 		t.Fatal("Unable to subscribe")
 	}
@@ -294,7 +292,7 @@ func TestSubscriptionAfterDisconnect(t *testing.T) {
 
 	go client.Publish(channel, 2)
 	select {
-	case <-message:
+	case <-msgC:
 	case <-time.After(5 * time.Second):
 		t.Fatal("Unable to resubscribe after dropping connection")
 	}
@@ -312,17 +310,17 @@ func TestRTM_Unsubscribe(t *testing.T) {
 
 	sub, _ := client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{})
 	expected := []int{0, 1, 2}
-	message := make(chan bool)
-	sub.On(subscription.EVENT_DATA, func(data interface{}) {
+	msgC := make(chan bool)
+	sub.OnData(func(message json.RawMessage) {
 		if len(expected) == 0 {
 			t.Fatal("We got the message, but should not")
 		}
-		msg, _ := strconv.Atoi(string(data.(json.RawMessage)))
+		msg, _ := strconv.Atoi(string(message))
 		if msg != expected[0] {
 			t.Fatal("Wrong message order or wrong message")
 		}
 		expected = expected[1:]
-		message <- true
+		msgC <- true
 	})
 	err = waitSubscribed(sub)
 	if err != nil {
@@ -338,7 +336,7 @@ func TestRTM_Unsubscribe(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		select {
-		case <-message:
+		case <-msgC:
 		case <-time.After(5 * time.Second):
 			t.Fatal("Unable to get message for subscription")
 		}
@@ -358,7 +356,7 @@ func TestRTM_Unsubscribe(t *testing.T) {
 	}()
 
 	select {
-	case <-message:
+	case <-msgC:
 		t.Fatal("We are still subscribed")
 	case <-time.After(1 * time.Second):
 	}
@@ -367,11 +365,11 @@ func TestRTM_Unsubscribe(t *testing.T) {
 func waitSubscribed(sub *subscription.Subscription) error {
 	subscribedC := make(chan bool)
 	errorC := make(chan error)
-	sub.Once(subscription.EVENT_SUBSCRIBED, func(data interface{}) {
+	sub.OnceSubscribed(func(pdu.SubscribeOk) {
 		subscribedC <- true
 	})
-	sub.Once(subscription.EVENT_SUBSCRIBE_ERROR, func(data interface{}) {
-		errorC <- data.(error)
+	sub.OnceSubscribeError(func(err pdu.SubscribeError) {
+		errorC <- errors.New(err.Error + "; " + err.Reason)
 	})
 	select {
 	case <-subscribedC:
