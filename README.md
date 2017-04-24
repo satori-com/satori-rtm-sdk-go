@@ -1,4 +1,4 @@
-Golang SDK for Satori Platform
+Go SDK for Satori RTM
 ============================================================
 
 [![GitHub tag](https://img.shields.io/github/tag/satori-com/satori-rtm-sdk-go.svg)]() [![GoDoc Widget]][GoDoc]
