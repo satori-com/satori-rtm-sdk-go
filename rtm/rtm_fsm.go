@@ -12,11 +12,11 @@ func (rtm *RTM) initFSM() {
 		STATE_STOPPED: fsm.Events{
 			"enterStopped": func(f *fsm.FSM) {
 				logger.Info("Client: Enter Stopped")
-				rtm.Fire("enterStopped", nil)
+				rtm.Fire(EVENT_STOPPED, nil)
 				rtm.closeConnection()
 			},
 			"leaveStopped": func(f *fsm.FSM) {
-				rtm.Fire("leaveStopped", nil)
+				rtm.Fire(EVENT_LEAVE_STOPPED, nil)
 			},
 			"start": func(f *fsm.FSM) {
 				f.Transition(STATE_CONNECTING)
@@ -25,15 +25,15 @@ func (rtm *RTM) initFSM() {
 		STATE_CONNECTING: fsm.Events{
 			"enterConnecting": func(f *fsm.FSM) {
 				logger.Info("Client: Enter Connecting")
-				rtm.Fire("enterConnecting", nil)
+				rtm.Fire(EVENT_CONNECTING, nil)
 				err := rtm.connect()
 				if err != nil {
 					logger.Error(err)
-					rtm.Fire("error", err)
+					rtm.Fire(EVENT_ERROR, err)
 				}
 			},
 			"leaveConnecting": func(f *fsm.FSM) {
-				rtm.Fire("leaveConnecting", nil)
+				rtm.Fire(EVENT_LEAVE_CONNECTING, nil)
 			},
 			"open": func(f *fsm.FSM) {
 				f.Transition(STATE_CONNECTED)
@@ -51,13 +51,13 @@ func (rtm *RTM) initFSM() {
 		STATE_CONNECTED: fsm.Events{
 			"enterConnected": func(f *fsm.FSM) {
 				logger.Info("Client: Enter Connected")
-				rtm.Fire("enterConnected", nil)
+				rtm.Fire(EVENT_CONNECTED, nil)
 				rtm.reconnectCount = 0
 				rtm.subscribeAll()
 
 			},
 			"leaveConnected": func(f *fsm.FSM) {
-				rtm.Fire("leaveConnected", nil)
+				rtm.Fire(EVENT_LEAVE_CONNECTED, nil)
 				rtm.disconnectAll()
 			},
 			"close": func(f *fsm.FSM) {
@@ -73,7 +73,7 @@ func (rtm *RTM) initFSM() {
 		STATE_AWAITING: fsm.Events{
 			"enterAwaiting": func(f *fsm.FSM) {
 				logger.Info("Client: Enter Awaiting")
-				rtm.Fire("enterAwaiting", nil)
+				rtm.Fire(EVENT_AWAITING, nil)
 				rtm.closeConnection()
 
 				go func() {
@@ -87,7 +87,7 @@ func (rtm *RTM) initFSM() {
 				}()
 			},
 			"leaveAwaiting": func(f *fsm.FSM) {
-				rtm.Fire("leaveAwaiting", nil)
+				rtm.Fire(EVENT_LEAVE_AWAITING, nil)
 			},
 			"stop": func(f *fsm.FSM) {
 				f.Transition(STATE_STOPPED)
@@ -95,7 +95,7 @@ func (rtm *RTM) initFSM() {
 		},
 	})
 
-	events := []string{EVENT_OPEN, EVENT_CLOSED, EVENT_ERROR, EVENT_START, EVENT_STOP}
+	events := []string{EVENT_OPEN, EVENT_ERROR, EVENT_START, EVENT_STOP}
 	for _, event := range events {
 		func(event string) {
 			rtm.On(event, func(data interface{}) {

@@ -2,11 +2,11 @@ package subscription
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 	"reflect"
 	"testing"
 	"time"
-	"errors"
 )
 
 func TestSubscribePdu(t *testing.T) {
@@ -281,7 +281,7 @@ func TestSubscriptionEvents(t *testing.T) {
 	sub := New(subId, RELIABLE, pdu.SubscribeBodyOpts{})
 	event := make(chan bool)
 
-	sub.OnData(func(message json.RawMessage){
+	sub.OnData(func(message json.RawMessage) {
 		if string(message) != "hello" {
 			t.Fatal("Wrong OnData message")
 		}
@@ -298,44 +298,44 @@ func TestSubscriptionEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sub.OnSubscribed(func(sok pdu.SubscribeOk){
+	sub.OnSubscribed(func(sok pdu.SubscribeOk) {
 		if sok.Position != "123456789" {
 			t.Fatal("Wrong position in OnSubscribed")
 		}
 		event <- true
 	})
 	go sub.ProcessSubscribe(pdu.SubscribeOk{
-		Position: "123456789",
+		Position:       "123456789",
 		SubscriptionId: subId,
 	})
 	if err := waitEvent(event); err != nil {
 		t.Fatal(err)
 	}
 
-	sub.OnInfo(func(info pdu.SubscriptionInfo){
-		if info.Info != "sub_info" || info.Reason!= "sub_reason" {
+	sub.OnInfo(func(info pdu.SubscriptionInfo) {
+		if info.Info != "sub_info" || info.Reason != "sub_reason" {
 			t.Fatal("Wrong reason or info in OnInfo")
 		}
 		event <- true
 	})
 	go sub.ProcessInfo(pdu.SubscriptionInfo{
-		Reason: "sub_reason",
-		Info: "sub_info",
+		Reason:   "sub_reason",
+		Info:     "sub_info",
 		Position: "123",
 	})
 	if err := waitEvent(event); err != nil {
 		t.Fatal(err)
 	}
 
-	sub.OnSubscriptionError(func(err pdu.SubscriptionError){
+	sub.OnSubscriptionError(func(err pdu.SubscriptionError) {
 		if err.Reason != "sub_reason" || err.Error != "sub_error" {
 			t.Fatal("Wrong reason or info in OnSubscriptionError")
 		}
 		event <- true
 	})
 	go sub.ProcessSubscriptionError(pdu.SubscriptionError{
-		Error: "sub_error",
-		Reason: "sub_reason",
+		Error:    "sub_error",
+		Reason:   "sub_reason",
 		Position: "123",
 	})
 	if err := waitEvent(event); err != nil {
@@ -358,7 +358,7 @@ func TestSubscriptionMemoryLeak(t *testing.T) {
 	sub := New("test", RELIABLE, pdu.SubscribeBodyOpts{})
 	event := make(chan bool)
 	for i := 0; i <= 100000; i++ {
-		id := sub.OnData(func(message json.RawMessage){
+		id := sub.OnData(func(message json.RawMessage) {
 			if string(message) != "hello" {
 				t.Fatal("Wrong OnData message")
 			}
@@ -378,15 +378,15 @@ func TestSubscriptionMemoryLeak(t *testing.T) {
 	}
 
 	for i := 0; i <= 100000; i++ {
-		sub.OnceSubscribeError(func(err pdu.SubscribeError){
+		sub.OnceSubscribeError(func(err pdu.SubscribeError) {
 			if err.Error != "sub_error" {
 				t.Fatal("Wrong error")
 			}
 			event <- true
 		})
 		go sub.ProcessSubscribeError(pdu.SubscribeError{
-			Error: "sub_error",
-			Reason: "sub_reason",
+			Error:          "sub_error",
+			Reason:         "sub_reason",
 			SubscriptionId: "test",
 		})
 		if err := waitEvent(event); err != nil {

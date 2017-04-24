@@ -19,27 +19,25 @@
 // RTM Client allows to subscribe to the state changing events. An event occurs when the client
 // enters or leaves a state.
 //
-//   client.On(EVENT_NAME, func(data interface{}){
-//     logger.Info("Event occurred")
+// Use client.On<Event> function to continuously processing events or Once<Event> for one-time processing. Example:
+//
+//   client.OnConnected(func() {
+//     logger.Info("Connected")
 //   })
 //
-// You can use the following event consts to subscribe on:
+// You can use the following event consts to subscribe on. RTM client has:
 //
-//  // RTM client has STATE_STOPPED state when creating a new instance
-//  EVENT_STOPPED
-//  EVENT_LEAVE_STOPPED
+//  // STATE_STOPPED state when creating a new instance or when calling client.Stop()
+//  OnStopped, OnceStopped, OnLeaveStopped, OnceLeaveStopped
 //
-//  // STATE_CONNECTING
-//  EVENT_CONNECTING
-//  EVENT_LEAVE_CONNECTING
+//  // STATE_CONNECTING state when starting connecting to endpoint
+//	OnConnecting, OnceConnecting, OnLeaveConnecting, OnceLeaveConnecting
 //
-//  // STATE_CONNECTED state means that client established connection and ready to publish/read/write/etc
-//  EVENT_CONNECTED
-//  EVENT_LEAVE_CONNECTED
+//  // STATE_CONNECTED state when client established connection and ready to publish/read/write/etc
+//  OnConnected, OnceConnected, OnLeaveConnected, OnceLeaveConnected
 //
-//  // Client changes state STATE_AWAITING when network connection is broken
-//  EVENT_AWAITING
-//  EVENT_LEAVE_AWAITING
+//  // STATE_AWAITING state when network connection is broken or unexpectedly closed
+//  OnAwaiting, OnceAwaiting, OnLeaveAwaiting, OnceLeaveAwaiting
 //
 // RTM Client allows to use Event-Based model for other Events. Example:
 //
@@ -47,45 +45,43 @@
 //   if err != nil {
 //     logger.Fatal(err)
 //   }
-//   client.On(EVENT_ERROR, func(data interface{}){
-//     err := data.(RTMError)
-//     logger.Error(err)
+//   client.OnError(func(err RTMError) {
+//     if err.Code == ERROR_CODE_TRANSPORT {
+//       // Socket connection is broken
+//       logger.Err(err.Reason)
+//     }
 //   })
 //
-//   client.Once(EVENT_AUTHENTICATED, func(data interface{}){
+//   client.OnceAuthenticated(func() {
 //     logger.Info("Successfully authenticated")
 //   })
 //
 // Or use multiple event handlers for the same event
 //
-//   client.On(EVENT_ERROR, func(data interface{}){
-//     err := data.(RTMError)
+//   client.OnError(func(err RTMError) {
 //     if err.Code == ERROR_CODE_TRANSPORT {
-//       logger.Warn("Broken connection", err.Reason.Error())
+//       logger.Err(err.Reason)
 //     }
 //   })
 //
-//   client.On(EVENT_ERROR, func(data interface{}){
-//     err := data.(RTMError)
+//   client.OnError(func(err RTMError) {
 //     if err.Code == ERROR_CODE_AUTHENTICATION {
-//       logger.Warn("Authentication error", err.Reason.Error())
+//       // Make some actions if we failed to authenticate
+//       logger.Warn(err.Reason.Error())
 //     }
 //   })
 //
-// List of available event consts:
+// List of available events:
 //
-//   EVENT_STOPPED, EVENT_LEAVE_STOPPED, EVENT_CONNECTING, EVENT_LEAVE_CONNECTING,
-//   EVENT_CONNECTED, EVENT_LEAVE_CONNECTED, EVENT_AWAITING, EVENT_LEAVE_AWAITING
-//
-//   EVENT_START, EVENT_STOP, EVENT_CLOSED, EVENT_OPEN, EVENT_ERROR, EVENT_DATA_ERROR, EVENT_AUTHENTICATED
+//   OnStart, OnceStart, OnStop, OnceStop, OnOpen, OnceOpen, OnError, OnceError,
+//   OnDataError, OnceDataError, OnAuthenticated, OnceAuthenticated
 //
 // ERRORS
 //
-// When subscribing to the EVENT_ERROR event, callback function will always get RTMError type
-// Cast variable to RTMError type and compare with the following types to determine type of Error
+// When subscribing to the OnError event, callback function will always get RTMError type
+// Error "Code" can be compared with the following types to determine type of Error
 //
-//   client.On(EVENT_ERROR, func(data interface{}){
-//     err := data.(RTMError)
+//   client.OnError(func(err RTMError) {
 //     logger.Info(err.Code)
 //   })
 //
@@ -115,10 +111,22 @@
 //
 // Each subscription has the same event-based model as client. You can subscribe to the following events:
 //
-//   EVENT_DATA, EVENT_SUBSCRIBED, EVENT_UNSUBSCRIBED, EVENT_POSITION, EVENT_INFO,
-//   EVENT_SUBSCRIBE_ERROR, EVENT_UNSUBSCRIBE_ERROR, EVENT_SUBSCRIPTION_ERROR,
+//   OnData, OnceData, OnSubscribed, OnceSubscribed, OnUnsubscribed, OnceUnsubscribed,
+//   OnPosition, OncePosition, OnInfo, OnceInfo, OnSubscribeError, OnceSubscribeError,
+//   OnUnsubscribeError, OnceUnsubscribeError, OnSubscriptionError, OnceSubscriptionError
 //
-// Set EVENT_DATA callback to get subscription messages
+// Use On<Event> function to continuously processing events or Once<Event> for one-time processing. Example:
+//
+//   sub, _ := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{})
+//   sub.OnceSubscribed(func(sok pdu.SubscribeOk) {
+//     logger.Info("Subscribed")
+//   })
+//   sub.OnSubscriptionError(func(err pdu.SubscriptionError) {
+//     logger.Warn(err.Error + "; " + err.Reason)
+//   })
+//
+//
+// Set OnData callback to get subscription messages
 //
 //   // Example: Get messages and cast them to Message type
 //   type Message struct {
@@ -126,9 +134,9 @@
 //     Where []float32 `json:"where"`
 //   }
 //   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{})
-//   sub.On(subscription.EVENT_DATA, func(data interface{}){
+//   sub.OnData(func(data json.RawMessage) {
 //     var message Message
-//     json.Unmarshal(data.(json.RawMessage), &message)
+//     json.Unmarshal(data, &message)
 //     logger.Info(message.Who, message.Where)
 //   })
 //
