@@ -1,9 +1,10 @@
 Go SDK for Satori RTM
 ============================================================
 
-[![GitHub tag](https://img.shields.io/github/tag/satori-com/satori-rtm-sdk-go.svg)]() [![GoDoc Widget]][GoDoc]
+[![GitHub tag](https://img.shields.io/github/tag/satori-com/satori-rtm-sdk-go.svg)](https://github.com/satori-com/satori-rtm-sdk-go/tags)
+[![GoDoc Widget]][GoDoc]
 
-<img src="https://cdn.satori.com/assets/utilities/Satori_Landscape_Logo_LightBckgnd.png" height="150">
+[<img src="https://cdn.satori.com/assets/utilities/Satori_Landscape_Logo_LightBckgnd.png" height="150">](https://satori.com)
 
 Use the Go SDK for the Satori platform to create server-based applications that use the RTM to publish and subscribe.  
 Follow https://www.satori.com/ to meet with Satori platform.
