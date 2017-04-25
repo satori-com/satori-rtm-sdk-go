@@ -28,7 +28,7 @@ func ExampleRTM_Publish() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -49,7 +49,7 @@ func ExampleRTM_Publish_types() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -90,7 +90,7 @@ func ExampleRTM_PublishAck_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -116,15 +116,14 @@ func ExampleRTM_PublishAck_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	client.On(rtm.EVENT_CONNECTED, func(data interface{}) {
-		err := data.(rtm.RTMError)
-		logger.Error(err)
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
 	})
 	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -149,7 +148,7 @@ func ExampleRTM_Search() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -182,7 +181,7 @@ func ExampleRTM_Write_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -207,16 +206,15 @@ func ExampleRTM_Write_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	client.On(rtm.EVENT_CONNECTED, func(data interface{}) {
-		err := data.(rtm.RTMError)
-		logger.Error(err)
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
 	})
 
 	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -247,7 +245,7 @@ func ExampleRTM_Read_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -276,15 +274,14 @@ func ExampleRTM_Read_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	client.On(rtm.EVENT_ERROR, func(data interface{}) {
-		err := data.(rtm.RTMError)
-		logger.Error(err)
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
 	})
 	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -330,7 +327,7 @@ func ExampleRTM_Subscribe() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -386,7 +383,7 @@ func ExampleRTM_Subscribe_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.Once(rtm.EVENT_CONNECTED, func(data interface{}) {
+	client.OnceConnected(func() {
 		connected <- true
 	})
 	<-connected
@@ -416,12 +413,12 @@ func ExampleRTM() {
 	}
 
 	authEvent := make(chan bool)
-	client.Once(rtm.EVENT_AUTHENTICATED, func(data interface{}) {
+	client.OnceAuthenticated(func() {
 		logger.Info("Succesfully authenticated")
 		authEvent <- true
 	})
-	client.On(rtm.EVENT_ERROR, func(err interface{}) {
-		logger.Error(err.(error))
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
 		authEvent <- true
 	})
 
