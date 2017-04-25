@@ -99,7 +99,7 @@
 //
 // RTM client allows to subscribe to channels.
 //
-//   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{})
+//   err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{}, subscription.Listener{})
 //
 // Each subscription has 3 available subscription modes:
 //
@@ -109,21 +109,23 @@
 //
 // Check the rtm/subscription sub-package to get more information about the modes.
 //
-// Each subscription has the same event-based model as client. You can subscribe to the following events:
+// A subscription has an ability to specify listeners on the following Events:
 //
-//   OnData, OnceData, OnSubscribed, OnceSubscribed, OnUnsubscribed, OnceUnsubscribed,
-//   OnPosition, OncePosition, OnInfo, OnceInfo, OnSubscribeError, OnceSubscribeError,
-//   OnUnsubscribeError, OnceUnsubscribeError, OnSubscriptionError, OnceSubscriptionError
+//   OnData, OnSubscribed, OnUnsubscribed, OnPosition, OnSubscriptionInfo,
+//   OnSubscribeError, OnUnsubscribeError, OnSubscriptionError
 //
-// Use On<Event> function to continuously processing events or Once<Event> for one-time processing. Example:
+// You should specify listeners when creating a new subscription. Example:
 //
-//   sub, _ := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{})
-//   sub.OnceSubscribed(func(sok pdu.SubscribeOk) {
-//     logger.Info("Subscribed")
-//   })
-//   sub.OnSubscriptionError(func(err pdu.SubscriptionError) {
-//     logger.Warn(err.Error + "; " + err.Reason)
-//   })
+//   listener := subscription.NewListener()
+//   listener.OnSubscribed = func(sok pdu.SubscribeOk) {
+//     // Successfully subscribed
+//     logger.Info(sok)
+//   }
+//   listener.OnSubscriptionError = func(err pdu.SubscriptionError) {
+//     // Got "subscription error" from RTM
+//     logger.Error(errors.New(err.Error + "; " + err.Reason))
+//   }
+//   err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{}, listener)
 //
 //
 // Set OnData callback to get subscription messages
@@ -133,12 +135,14 @@
 //     Who   string    `json:"who"`
 //     Where []float32 `json:"where"`
 //   }
-//   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{})
-//   sub.OnData(func(data json.RawMessage) {
+//
+//   listener := subscription.NewListener()
+//   listener.OnData = func(data json.RawMessage) {
 //     var message Message
 //     json.Unmarshal(data, &message)
 //     logger.Info(message.Who, message.Where)
-//   })
+//   }
+//   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{}, listener)
 //
 // AUTH
 //
@@ -534,21 +538,25 @@ func (rtm *RTM) IsConnected() bool {
 // For more information about the body element of a PDU,
 // see pdu.SubscribeBodyOpts in the online docs
 // and rtm/subscription sub-package
-func (rtm *RTM) Subscribe(subscriptionId string, mode subscription.Mode, opts pdu.SubscribeBodyOpts) (*subscription.Subscription, error) {
-	sub := subscription.New(subscriptionId, mode, opts)
-	sub, err := rtm.processSubscription(sub)
-
-	return sub, err
+func (rtm *RTM) Subscribe(subscriptionId string, mode subscription.Mode, opts pdu.SubscribeBodyOpts, listener subscription.Listener) error {
+	sub := subscription.New(subscription.Config{
+		SubscriptionId: subscriptionId,
+		Mode:           mode,
+		Opts:           opts,
+		Listener:       listener,
+	})
+	err := rtm.processSubscription(sub)
+	return err
 }
 
-func (rtm *RTM) processSubscription(sub *subscription.Subscription) (*subscription.Subscription, error) {
+func (rtm *RTM) processSubscription(sub *subscription.Subscription) error {
 	var subscriptionId = sub.GetSubscriptionId()
 
 	if rtm.fsm.CurrentState() == STATE_CONNECTED {
 		subPdu := sub.SubscribePdu()
 		c, err := rtm.socketSend(subPdu.Action, &subPdu.Body, ACK)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		go func() {
@@ -578,7 +586,7 @@ func (rtm *RTM) processSubscription(sub *subscription.Subscription) (*subscripti
 		rtm.subscriptions.list[subscriptionId] = sub
 	}
 
-	return sub, nil
+	return nil
 }
 
 func (rtm *RTM) subscribeAll() error {

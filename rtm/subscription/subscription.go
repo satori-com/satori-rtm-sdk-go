@@ -16,14 +16,18 @@ package subscription
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
-	"github.com/satori-com/satori-rtm-sdk-go/observer"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 )
 
 const (
 	STATE_UNSUBSCRIBED = 0
 	STATE_SUBSCRIBED   = 1
+)
+
+var (
+	ERROR_EMPTY_MODE = errors.New("Mode must be specified")
 )
 
 var (
@@ -70,6 +74,13 @@ var (
 	}
 )
 
+type Config struct {
+	SubscriptionId string
+	Opts           pdu.SubscribeBodyOpts
+	Listener       Listener
+	Mode           Mode
+}
+
 // Subscription mode struct. Check RELIABLE, SIMPLE and ADVANCED vars
 type Mode struct {
 	trackPosition bool
@@ -83,33 +94,17 @@ type Subscription struct {
 	mode           Mode
 	position       string
 	body           pdu.SubscribeBody
-
-	// Implements Observer behavior
-	observer.Observer
+	listener       Listener
 }
 
-// Creates new subscription instance
-//
-// Example:
-//  sub, err := New("my-channel", RELIABLE, pdu.SubscribeBodyOpts{
-//    Filter: "SELECT * FROM `test`",
-//    History: pdu.SubscribeHistory{
-//      Count: 1,
-//      Age: 10,
-//    },
-//  })
-//
-//  sub2, err := New("my-simple-subscription", RELIABLE, pdu.SubscribeBodyOpts{})
-//
-func New(subscriptionId string, m Mode, opts pdu.SubscribeBodyOpts) *Subscription {
-	s := &Subscription{
-		Observer: observer.New(),
-	}
+func New(config Config) *Subscription {
+	s := &Subscription{}
 	s.state = STATE_UNSUBSCRIBED
-	s.mode = m
-	s.subscriptionId = subscriptionId
+	s.mode = config.Mode
+	s.subscriptionId = config.SubscriptionId
 	s.position = ""
 
+	opts := config.Opts
 	s.body.Filter = opts.Filter
 	s.body.History = opts.History
 	s.body.Period = opts.Period
@@ -122,6 +117,8 @@ func New(subscriptionId string, m Mode, opts pdu.SubscribeBodyOpts) *Subscriptio
 	} else {
 		s.body.Channel = s.subscriptionId
 	}
+
+	s.listener = config.Listener
 
 	return s
 }
@@ -160,7 +157,10 @@ func (s *Subscription) ProcessSubscribe(data pdu.SubscribeOk) {
 	s.trackPosition(data.Position)
 	s.state = STATE_SUBSCRIBED
 	s.body.Position = ""
-	s.Fire(EVENT_SUBSCRIBED, data)
+
+	if s.listener.OnSubscribed != nil {
+		s.listener.OnSubscribed(data)
+	}
 
 	logger.Info("Subscription '" + s.subscriptionId + "' is subscribed now")
 }
@@ -171,14 +171,20 @@ func (s *Subscription) ProcessDisconnect() {
 
 func (s *Subscription) ProcessInfo(data pdu.SubscriptionInfo) {
 	s.trackPosition(data.Position)
-	s.Fire(EVENT_INFO, data)
+
+	if s.listener.OnSubscriptionInfo != nil {
+		s.listener.OnSubscriptionInfo(data)
+	}
 
 	logger.Warn("Falling behind for '" + s.subscriptionId + "'. Fast forward subscription")
 }
 
 func (s *Subscription) ProcessSubscribeError(data pdu.SubscribeError) {
 	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
-	s.Fire(EVENT_SUBSCRIBE_ERROR, data)
+
+	if s.listener.OnSubscribeError != nil {
+		s.listener.OnSubscribeError(data)
+	}
 
 	logger.Warn("Error occured when subscribing to '" + s.subscriptionId + "'")
 }
@@ -186,8 +192,10 @@ func (s *Subscription) ProcessSubscribeError(data pdu.SubscribeError) {
 func (s *Subscription) ProcessSubscriptionError(data pdu.SubscriptionError) {
 	s.trackPosition(data.Position)
 	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
-	s.Fire(EVENT_SUBSCRIPTION_ERROR, data)
 
+	if s.listener.OnSubscriptionError != nil {
+		s.listener.OnSubscriptionError(data)
+	}
 	logger.Warn("Subscription error for '" + s.subscriptionId + "'")
 }
 
@@ -196,20 +204,29 @@ func (s *Subscription) ProcessUnsubscribe(data pdu.UnsubscribeBodyResponse) {
 }
 
 func (s *Subscription) ProcessUnsubscribeError(data pdu.UnsubscribeError) {
-	s.Fire(EVENT_UNSUBSCRIBE_ERROR, data)
+	if s.listener.OnUnsubscribeError != nil {
+		s.listener.OnUnsubscribeError(data)
+	}
 	logger.Warn("Error occured when unsubscribing from '" + s.subscriptionId + "'")
 }
 
 func (s *Subscription) ProcessData(data pdu.SubscriptionData) {
+	s.trackPosition(data.Position)
+
 	for _, message := range data.Messages {
-		s.Fire("data", message)
+		if s.listener.OnData != nil {
+			s.listener.OnData(message)
+		}
 	}
 }
 
 func (s *Subscription) markUnsubscribe(data pdu.UnsubscribeBodyResponse) {
 	if s.state == STATE_SUBSCRIBED {
 		s.state = STATE_UNSUBSCRIBED
-		s.Fire(EVENT_UNSUBSCRIBED, data)
+
+		if s.listener.OnUnsubscribed != nil {
+			s.listener.OnUnsubscribed(data)
+		}
 	}
 }
 
@@ -219,7 +236,9 @@ func (s *Subscription) trackPosition(position string) {
 		s.position = position
 	}
 
-	s.Fire(EVENT_POSITION, position)
+	if s.listener.OnPosition != nil {
+		s.listener.OnPosition(position)
+	}
 }
 
 // Gets current subscription state

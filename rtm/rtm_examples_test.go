@@ -312,16 +312,22 @@ func ExampleRTM_Subscribe() {
 		AuthProvider: authProvider,
 	})
 
-	sub, _ := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{
-		Filter: "SELECT * FROM `test`",
-		History: pdu.SubscribeHistory{
-			Count: 1,
-			Age:   10,
-		},
-	})
-	sub.OnData(func(message json.RawMessage) {
+	listener := subscription.NewListener()
+	listener.OnData = func(message json.RawMessage) {
 		logger.Info(string(message))
-	})
+	}
+	client.Subscribe(
+		"<your-channel>",
+		subscription.RELIABLE,
+		pdu.SubscribeBodyOpts{
+			Filter: "SELECT * FROM `test`",
+			History: pdu.SubscribeHistory{
+				Count: 1,
+				Age:   10,
+			},
+		},
+		listener,
+	)
 
 	client.Start()
 
@@ -355,30 +361,40 @@ func ExampleRTM_Subscribe_processErrors() {
 		AuthProvider: authProvider,
 	})
 
-	sub, _ := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{
-		Filter: "SELECT * FROM `test`",
-		History: pdu.SubscribeHistory{
-			Count: 1,
-			Age:   10,
-		},
-	})
-	sub.OnData(func(message json.RawMessage) {
+	listener := subscription.NewListener()
+	listener.OnData = func(message json.RawMessage) {
 		// Got message
 		logger.Info(string(message))
-	})
-	sub.OnInfo(func(info pdu.SubscriptionInfo) {
+	}
+	listener.OnSubscribed = func(sok pdu.SubscribeOk) {
+		// Successfully subscribed
+		logger.Info(sok)
+	}
+	listener.OnSubscriptionInfo = func(info pdu.SubscriptionInfo) {
 		// Got "subscription/info" from RTM
 		logger.Warn(info)
-	})
-	sub.OnSubscriptionError(func(err pdu.SubscriptionError) {
+	}
+	listener.OnSubscriptionError = func(err pdu.SubscriptionError) {
 		// Got "subscription/error" from RTM
 		logger.Error(errors.New(err.Error + "; " + err.Reason))
-	})
-	sub.OnUnsubscribed(func(unsub pdu.UnsubscribeBodyResponse) {
+	}
+	listener.OnUnsubscribed = func(unsub pdu.UnsubscribeBodyResponse) {
 		// Successfully unsubscribed
 		logger.Info(unsub)
-	})
+	}
 
+	client.Subscribe(
+		"<your-channel>",
+		subscription.RELIABLE,
+		pdu.SubscribeBodyOpts{
+			Filter: "SELECT * FROM `test`",
+			History: pdu.SubscribeHistory{
+				Count: 1,
+				Age:   10,
+			},
+		},
+		listener,
+	)
 	client.Start()
 
 	// Wait for client is connected

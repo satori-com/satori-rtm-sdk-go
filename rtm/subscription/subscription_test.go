@@ -10,13 +10,17 @@ import (
 )
 
 func TestSubscribePdu(t *testing.T) {
-	sub := New("test", RELIABLE, pdu.SubscribeBodyOpts{
-		Filter: "SELECT * FROM `test`",
-		History: pdu.SubscribeHistory{
-			Count: 1,
-			Age:   10,
+	sub := New(Config{
+		SubscriptionId: "test",
+		Mode:           RELIABLE,
+		Opts: pdu.SubscribeBodyOpts{
+			Filter: "SELECT * FROM `test`",
+			History: pdu.SubscribeHistory{
+				Count: 1,
+				Age:   10,
+			},
+			Position: "123456789",
 		},
-		Position: "123456789",
 	})
 	subPdu := sub.SubscribePdu()
 
@@ -45,7 +49,10 @@ func TestSubscribePdu(t *testing.T) {
 }
 
 func TestUnsubscribePdu(t *testing.T) {
-	sub := New("test", RELIABLE, pdu.SubscribeBodyOpts{})
+	sub := New(Config{
+		SubscriptionId: "test",
+		Mode:           RELIABLE,
+	})
 	unsubPdu := sub.UnsubscribePdu()
 
 	if unsubPdu.Action != "rtm/unsubscribe" {
@@ -59,24 +66,36 @@ func TestUnsubscribePdu(t *testing.T) {
 }
 
 func TestModes(t *testing.T) {
-	sub := New("reliable", RELIABLE, pdu.SubscribeBodyOpts{})
+	sub := New(Config{
+		SubscriptionId: "reliable",
+		Mode:           RELIABLE,
+	})
 	if sub.mode.trackPosition != true || sub.mode.fastForward != true {
 		t.Error("RELIABLE mode sets wrong flags")
 	}
 
-	sub = New("simple", SIMPLE, pdu.SubscribeBodyOpts{})
+	sub = New(Config{
+		SubscriptionId: "simple",
+		Mode:           SIMPLE,
+	})
 	if sub.mode.trackPosition != false || sub.mode.fastForward != true {
 		t.Error("SIMPLE mode sets wrong flags")
 	}
 
-	sub = New("advanced", ADVANCED, pdu.SubscribeBodyOpts{})
+	sub = New(Config{
+		SubscriptionId: "advanced",
+		Mode:           ADVANCED,
+	})
 	if sub.mode.trackPosition != true || sub.mode.fastForward != false {
 		t.Error("ADVANCED mode sets wrong flags")
 	}
 }
 
 func TestStates(t *testing.T) {
-	sub := New("reliable", RELIABLE, pdu.SubscribeBodyOpts{})
+	sub := New(Config{
+		SubscriptionId: "reliable",
+		Mode:           RELIABLE,
+	})
 	if sub.GetState() != STATE_UNSUBSCRIBED {
 		t.Error("Subscription has SUBSCRIBED state, but should not")
 	}
@@ -97,16 +116,23 @@ func TestStates(t *testing.T) {
 }
 
 func TestDataChannel(t *testing.T) {
-	sub := New("reliable", RELIABLE, pdu.SubscribeBodyOpts{})
+	msgC := make(chan string, 3)
+
+	listener := NewListener()
+	listener.OnData = func(data json.RawMessage) {
+		msgC <- string(data)
+	}
+	config := Config{
+		SubscriptionId: "reliable",
+		Mode:           RELIABLE,
+		Listener:       listener,
+	}
+	sub := New(config)
 	messages := []json.RawMessage{
 		json.RawMessage("hello"),
 		json.RawMessage("\"{}\""),
 		json.RawMessage("!@#123"),
 	}
-	msgC := make(chan string, 3)
-	sub.On("data", func(data interface{}) {
-		msgC <- string(data.(json.RawMessage))
-	})
 	sub.ProcessData(pdu.SubscriptionData{
 		Position:       "123",
 		Messages:       messages,
@@ -128,16 +154,21 @@ func TestDataChannel(t *testing.T) {
 }
 
 func TestOnError(t *testing.T) {
-	sub := New("reliable", RELIABLE, pdu.SubscribeBodyOpts{
-		Position: "123456789",
-	})
-
 	event := make(chan bool)
-	sub.On("subscribeError", func(data interface{}) {
-		event <- true
-	})
 
-	sub.ProcessSubscribeError(pdu.SubscribeError{
+	listener := NewListener()
+	listener.OnSubscribeError = func(err pdu.SubscribeError) {
+		event <- true
+	}
+	sub := New(Config{
+		SubscriptionId: "reliable",
+		Opts: pdu.SubscribeBodyOpts{
+			Position: "123456789",
+		},
+		Mode:     RELIABLE,
+		Listener: listener,
+	})
+	go sub.ProcessSubscribeError(pdu.SubscribeError{
 		Error:  "test_error",
 		Reason: "no_reason",
 	})
@@ -150,10 +181,13 @@ func TestOnError(t *testing.T) {
 }
 
 func TestOnInfo(t *testing.T) {
-	sub := New("reliable", RELIABLE, pdu.SubscribeBodyOpts{
-		Position: "123456789",
+	sub := New(Config{
+		SubscriptionId: "reliable",
+		Mode:           RELIABLE,
+		Opts: pdu.SubscribeBodyOpts{
+			Position: "123456789",
+		},
 	})
-
 	sub.ProcessInfo(pdu.SubscriptionInfo{
 		Info:     "fast_forward",
 		Reason:   "slow read",
@@ -166,21 +200,28 @@ func TestOnInfo(t *testing.T) {
 }
 
 func TestSubscription_GetSubscriptionId(t *testing.T) {
-	sub := New("test123", RELIABLE, pdu.SubscribeBodyOpts{})
+	sub := New(Config{
+		SubscriptionId: "test123",
+		Mode:           RELIABLE,
+	})
 	if sub.GetSubscriptionId() != "test123" {
 		t.Fatal("Wrong subscription ID")
 	}
 }
 
 func TestEvents(t *testing.T) {
-	sub := New("test", RELIABLE, pdu.SubscribeBodyOpts{})
-
 	event := make(chan bool)
-	sub.On("subscribed", func(data interface{}) {
-		event <- true
-	})
 
-	sub.ProcessSubscribe(pdu.SubscribeOk{
+	listener := NewListener()
+	listener.OnSubscribed = func(data pdu.SubscribeOk) {
+		event <- true
+	}
+	sub := New(Config{
+		SubscriptionId: "test",
+		Mode:           RELIABLE,
+		Listener:       listener,
+	})
+	go sub.ProcessSubscribe(pdu.SubscribeOk{
 		Position:       "1234567",
 		SubscriptionId: "test",
 	})
@@ -193,8 +234,12 @@ func TestEvents(t *testing.T) {
 }
 
 func TestSimpleSubscription(t *testing.T) {
-	sub := New("test123", SIMPLE, pdu.SubscribeBodyOpts{
-		Position: "123",
+	sub := New(Config{
+		SubscriptionId: "test123",
+		Mode:           SIMPLE,
+		Opts: pdu.SubscribeBodyOpts{
+			Position: "123",
+		},
 	})
 
 	var subPdu pdu.SubscribeBody
@@ -217,8 +262,12 @@ func TestSimpleSubscription(t *testing.T) {
 }
 
 func TestReliableSubscription(t *testing.T) {
-	sub := New("test123", RELIABLE, pdu.SubscribeBodyOpts{
-		Position: "123",
+	sub := New(Config{
+		SubscriptionId: "test123",
+		Mode:           RELIABLE,
+		Opts: pdu.SubscribeBodyOpts{
+			Position: "123",
+		},
 	})
 
 	var subPdu pdu.SubscribeBody
@@ -244,18 +293,23 @@ func TestStructTransfer(t *testing.T) {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
-	sub := New("test123", RELIABLE, pdu.SubscribeBodyOpts{})
 
 	occurred := make(chan bool)
-	sub.On("data", func(data interface{}) {
+
+	listener := NewListener()
+	listener.OnData = func(message json.RawMessage) {
 		var msg Message
-		json.Unmarshal(data.(json.RawMessage), &msg)
+		json.Unmarshal(message, &msg)
 
 		if msg.Who != "zebra" || reflect.DeepEqual(&msg.Where, []float32{34.134358, -118.321506}) {
 			t.Fatal("Wrong decoded message")
 		}
-
 		occurred <- true
+	}
+	sub := New(Config{
+		SubscriptionId: "test123",
+		Mode:           RELIABLE,
+		Listener:       listener,
 	})
 
 	message, _ := json.Marshal(&Message{
@@ -263,7 +317,7 @@ func TestStructTransfer(t *testing.T) {
 		Where: []float32{34.134358, -118.321506},
 	})
 	messages := []json.RawMessage{message}
-	sub.ProcessData(pdu.SubscriptionData{
+	go sub.ProcessData(pdu.SubscriptionData{
 		Position:       "123",
 		Messages:       messages,
 		SubscriptionId: "test123",
@@ -278,15 +332,40 @@ func TestStructTransfer(t *testing.T) {
 
 func TestSubscriptionEvents(t *testing.T) {
 	var subId string = "test123"
-	sub := New(subId, RELIABLE, pdu.SubscribeBodyOpts{})
 	event := make(chan bool)
 
-	sub.OnData(func(message json.RawMessage) {
+	listener := NewListener()
+	listener.OnData = func(message json.RawMessage) {
 		if string(message) != "hello" {
 			t.Fatal("Wrong OnData message")
 		}
 		event <- true
+	}
+	listener.OnSubscribed = func(sok pdu.SubscribeOk) {
+		if sok.Position != "123456789" {
+			t.Fatal("Wrong position in OnSubscribed")
+		}
+		event <- true
+	}
+	listener.OnSubscriptionInfo = func(info pdu.SubscriptionInfo) {
+		if info.Info != "sub_info" || info.Reason != "sub_reason" {
+			t.Fatal("Wrong reason or info in OnInfo")
+		}
+		event <- true
+	}
+	listener.OnSubscriptionError = func(err pdu.SubscriptionError) {
+		if err.Reason != "sub_reason" || err.Error != "sub_error" {
+			t.Fatal("Wrong reason or info in OnSubscriptionError")
+		}
+		event <- true
+	}
+
+	sub := New(Config{
+		SubscriptionId: subId,
+		Mode:           RELIABLE,
+		Listener:       listener,
 	})
+
 	go sub.ProcessData(pdu.SubscriptionData{
 		Position: "123456789",
 		Messages: []json.RawMessage{
@@ -298,12 +377,6 @@ func TestSubscriptionEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sub.OnSubscribed(func(sok pdu.SubscribeOk) {
-		if sok.Position != "123456789" {
-			t.Fatal("Wrong position in OnSubscribed")
-		}
-		event <- true
-	})
 	go sub.ProcessSubscribe(pdu.SubscribeOk{
 		Position:       "123456789",
 		SubscriptionId: subId,
@@ -312,12 +385,6 @@ func TestSubscriptionEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sub.OnInfo(func(info pdu.SubscriptionInfo) {
-		if info.Info != "sub_info" || info.Reason != "sub_reason" {
-			t.Fatal("Wrong reason or info in OnInfo")
-		}
-		event <- true
-	})
 	go sub.ProcessInfo(pdu.SubscriptionInfo{
 		Reason:   "sub_reason",
 		Info:     "sub_info",
@@ -327,12 +394,6 @@ func TestSubscriptionEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sub.OnSubscriptionError(func(err pdu.SubscriptionError) {
-		if err.Reason != "sub_reason" || err.Error != "sub_error" {
-			t.Fatal("Wrong reason or info in OnSubscriptionError")
-		}
-		event <- true
-	})
 	go sub.ProcessSubscriptionError(pdu.SubscriptionError{
 		Error:    "sub_error",
 		Reason:   "sub_reason",
@@ -355,38 +416,27 @@ func waitEvent(event <-chan bool) error {
 // Tests memory leaks. Shows results only when running
 // "go test" together with "-gcflags=-m -run TestSubscriptionMemoryLeak"
 func TestSubscriptionMemoryLeak(t *testing.T) {
-	sub := New("test", RELIABLE, pdu.SubscribeBodyOpts{})
 	event := make(chan bool)
+
+	listener := NewListener()
+	listener.OnData = func(message json.RawMessage) {
+		if string(message) != "hello" {
+			t.Fatal("Wrong OnData message")
+		}
+		event <- true
+	}
+	sub := New(Config{
+		SubscriptionId: "test",
+		Mode:           RELIABLE,
+		Listener:       listener,
+	})
+
 	for i := 0; i <= 100000; i++ {
-		id := sub.OnData(func(message json.RawMessage) {
-			if string(message) != "hello" {
-				t.Fatal("Wrong OnData message")
-			}
-			event <- true
-		})
 		go sub.ProcessData(pdu.SubscriptionData{
 			Position: "123456789",
 			Messages: []json.RawMessage{
 				json.RawMessage("hello"),
 			},
-			SubscriptionId: "test",
-		})
-		if err := waitEvent(event); err != nil {
-			t.Fatal(err)
-		}
-		sub.Off(EVENT_DATA, id)
-	}
-
-	for i := 0; i <= 100000; i++ {
-		sub.OnceSubscribeError(func(err pdu.SubscribeError) {
-			if err.Error != "sub_error" {
-				t.Fatal("Wrong error")
-			}
-			event <- true
-		})
-		go sub.ProcessSubscribeError(pdu.SubscribeError{
-			Error:          "sub_error",
-			Reason:         "sub_reason",
 			SubscriptionId: "test",
 		})
 		if err := waitEvent(event); err != nil {
