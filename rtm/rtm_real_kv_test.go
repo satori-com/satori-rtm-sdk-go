@@ -7,12 +7,6 @@ import (
 	"testing"
 )
 
-type credentialsT struct {
-	Endpoint      string `json:"endpoint"`
-	AppKey        string `json:"appkey"`
-	RoleSecretKey string `json:"superuser_role_secret"`
-}
-
 func TestRTM_Write(t *testing.T) {
 	client, err := getRTM()
 	if err != nil {
