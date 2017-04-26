@@ -206,7 +206,10 @@ type RTM struct {
 	observer.Observer
 }
 
-// Creates new RTM client instance
+// Creates a new RTM client instance.
+// "endpoint" and "appkey" are mandatory fields and cannot be empty.
+//
+// You should run Start() after creating a new instance to establish connection to RTM
 func New(endpoint, appkey string, opts Options) (*RTM, error) {
 	logger.Info("Creating new RTM object")
 
@@ -260,8 +263,8 @@ func (rtm *RTM) Publish(channel string, message interface{}) error {
 	return err
 }
 
-// Publishes a message to a channel.
-// Returns channel that gets the messages when RTM is confirm message delivery or error occurred
+// Publishes a message to a channel with Acknowledge. The RTM client must be connected.
+// Returns the channel that will receive the message when RTM confirms message delivery or error occurred
 func (rtm *RTM) PublishAck(channel string, message interface{}) <-chan PublishResponse {
 	var err error
 	retCh := make(chan PublishResponse, 1)
@@ -303,8 +306,8 @@ func (rtm *RTM) PublishAck(channel string, message interface{}) <-chan PublishRe
 	return retCh
 }
 
-// Writes a value to the specified channel.
-// Returns channel that gets the messages when RTM is confirm message delivery or error occurred
+// Writes a value to the specified channel. The RTM client must be connected.
+// Returns the channel that will receive the message when RTM confirms message delivery or error occurred
 func (rtm *RTM) Write(channel string, message interface{}) <-chan WriteResponse {
 	var err error
 	retCh := make(chan WriteResponse, 1)
@@ -348,8 +351,8 @@ func (rtm *RTM) Write(channel string, message interface{}) <-chan WriteResponse 
 	return retCh
 }
 
-// Deletes the value for the specified channel.
-// Returns channel that gets the messages when RTM is confirm message delivery or error occurred
+// Deletes the value for the associated channel. The RTM client must be connected.
+// Returns the channel that will receive the message when RTM confirms message delivery or error occurred
 func (rtm *RTM) Delete(channel string) <-chan DeleteResponse {
 	var err error
 	retCh := make(chan DeleteResponse, 1)
@@ -391,14 +394,14 @@ func (rtm *RTM) Delete(channel string) <-chan DeleteResponse {
 	return retCh
 }
 
-// Reads the latest message written to a specific channel, as a RawJson.
-// Returns channel that gets the messages when RTM is confirm message delivery or error occurred
+// Reads the latest message written to a specific channel. The RTM client must be connected.
+// Returns the channel that will receive the message when RTM responds or error occurred
 func (rtm *RTM) Read(channel string) <-chan ReadResponse {
 	return rtm.ReadPos(channel, "")
 }
 
-// Reads the message with specified position written to a specific channel, as a RawJson.
-// Returns channel that gets the messages when RTM is confirm message delivery or error occurred
+// Reads the message with the specified position written to a specific channel. The RTM client must be connected.
+// Returns the channel that will receive the message when RTM responds or error occurred
 func (rtm *RTM) ReadPos(channel string, position string) <-chan ReadResponse {
 	var err error
 	retCh := make(chan ReadResponse, 1)
@@ -443,10 +446,10 @@ func (rtm *RTM) ReadPos(channel string, position string) <-chan ReadResponse {
 }
 
 // Performs a channel search for a given user-defined prefix. This method passes
-// replies to the go channel.
+// replies to the go-channel.
 //
 // Go channel contains channel names returned by RTM. Channel will be closed after reading the last message.
-// Returns channel that gets the messages when RTM is confirm message delivery or error occurred
+// Returns the channel that will receive the messages with channel names when RTM responds or error occurred
 func (rtm *RTM) Search(prefix string) <-chan SearchResponse {
 	var err error
 	retCh := make(chan SearchResponse)
@@ -516,28 +519,35 @@ func (rtm *RTM) IsConnected() bool {
 // for example, add a filter to the subscription and specify the
 // behavior of the SDK when resubscribing after a reconnection.
 //
-// For more information about the options for a channel subscription,
-// see pdu.SubscribePDU in the online docs.
+//   subscriptionId string
 //
-// subscriptionId - String that identifies the channel. If you do not
+// String that identifies the channel. If you do not
 // use the filter parameter, it is the channel name. Otherwise,
 // it is a unique identifier for the channel (subscription id).
 //
-// mode
+//   mode subscription.Mode
+//
 // Subscription mode. This mode determines the behaviour of the Golang
 // SDK and RTM when resubscribing after a reconnection.
 //
 // For more information about the options for a subscription,
-// see Subscription Modes in the online docs.
+// see sub-module subscription/Mode (RELIABLE, SIMPLE, ADVANCED) in the online docs.
 //
-// opts
+//   opts pdu.SubscribeBodyOpts
+//
 // Additional subscription options for a channel subscription. These options
 // are sent to RTM in the body element of the
 // Protocol Data Unit (PDU) that represents the subscribe request.
 //
 // For more information about the body element of a PDU,
-// see pdu.SubscribeBodyOpts in the online docs
+// see sub-module pdu/SubscribeBodyOpts in the online docs.
 // and rtm/subscription sub-package
+//
+//   listener subscription.Listener
+//
+// Listener instance to define application functionality based on subscription state changes or subscription events.
+// For example, you can define callback for when a channel receives a message, when the application
+// subscribes or unsubscribes to a channel, or gets the errors.
 func (rtm *RTM) Subscribe(subscriptionId string, mode subscription.Mode, opts pdu.SubscribeBodyOpts, listener subscription.Listener) error {
 	sub := subscription.New(subscription.Config{
 		SubscriptionId: subscriptionId,
@@ -606,8 +616,8 @@ func (rtm *RTM) disconnectAll() {
 	}
 }
 
-// Removes the specified subscription.
-// Returns channel that gets the messages when RTM is confirm message delivery or error occurred
+// Removes the specified subscription. The RTM client must be connected.
+// Returns the channel that will receive the message when RTM confirms unsubscribing or error occurred
 func (rtm *RTM) Unsubscribe(subscriptionId string) <-chan UnsunscribeResponse {
 	retCh := make(chan UnsunscribeResponse, 1)
 

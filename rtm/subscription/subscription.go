@@ -16,7 +16,6 @@ package subscription
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 )
@@ -24,10 +23,6 @@ import (
 const (
 	STATE_UNSUBSCRIBED = 0
 	STATE_SUBSCRIBED   = 1
-)
-
-var (
-	ERROR_EMPTY_MODE = errors.New("Mode must be specified")
 )
 
 var (
