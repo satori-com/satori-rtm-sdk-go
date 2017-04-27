@@ -12,6 +12,7 @@ const (
 	EVENT_START            = "start"
 	EVENT_STOP             = "stop"
 	EVENT_OPEN             = "open"
+	EVENT_CLOSE            = "close"
 	EVENT_ERROR            = "error"
 	EVENT_DATA_ERROR       = "dataError"
 	EVENT_AUTHENTICATED    = "authenticated"
