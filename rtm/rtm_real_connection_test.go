@@ -12,7 +12,7 @@ import (
 func TestWrongEndpoint(t *testing.T) {
 	client, _ := New("ws://wrong-host-name.www", "123", Options{})
 	event := make(chan bool)
-	client.OnceError(func(err RTMError) {
+	client.OnErrorOnce(func(err RTMError) {
 		if !strings.Contains(err.Reason.Error(), "no such host") {
 			t.Fatal("Wrong error returned")
 		}
@@ -40,7 +40,7 @@ func TestWrongAuth(t *testing.T) {
 		AuthProvider: authProvider,
 	})
 	event := make(chan bool)
-	client.OnceError(func(err RTMError) {
+	client.OnErrorOnce(func(err RTMError) {
 		// Try to convert to AuthError
 		var conv pdu.Error
 

@@ -19,7 +19,7 @@
 // RTM Client allows to subscribe to the state changing events. An event occurs when the client
 // enters or leaves a state.
 //
-// Use client.On<Event> function to continuously processing events or Once<Event> for one-time processing. Example:
+// Use client.On<Event> function to continuously processing events or On<Event>Once for one-time processing. Example:
 //
 //   client.OnConnected(func() {
 //     logger.Info("Connected")
@@ -28,16 +28,16 @@
 // You can use the following event consts to subscribe on. RTM client has:
 //
 //  // STATE_STOPPED state when creating a new instance or when calling client.Stop()
-//  OnStopped, OnceStopped, OnLeaveStopped, OnceLeaveStopped
+//  OnStopped, OnStoppedOnce, OnLeaveStopped, OnLeaveStoppedOnce
 //
 //  // STATE_CONNECTING state when starting connecting to endpoint
-//	OnConnecting, OnceConnecting, OnLeaveConnecting, OnceLeaveConnecting
+//	OnConnecting, OnConnectingOnce, OnLeaveConnecting, OnLeaveConnectingOnce
 //
 //  // STATE_CONNECTED state when client established connection and ready to publish/read/write/etc
-//  OnConnected, OnceConnected, OnLeaveConnected, OnceLeaveConnected
+//  OnConnected, OnConnectedOnce, OnLeaveConnected, OnLeaveConnectedOnce
 //
 //  // STATE_AWAITING state when network connection is broken or unexpectedly closed
-//  OnAwaiting, OnceAwaiting, OnLeaveAwaiting, OnceLeaveAwaiting
+//  OnAwaiting, OnAwaitingOnce, OnLeaveAwaiting, OnLeaveAwaitingOnce
 //
 // RTM Client allows to use Event-Based model for other Events. Example:
 //
@@ -52,7 +52,7 @@
 //     }
 //   })
 //
-//   client.OnceAuthenticated(func() {
+//   client.OnAuthenticatedOnce(func() {
 //     logger.Info("Successfully authenticated")
 //   })
 //
@@ -73,8 +73,8 @@
 //
 // List of available events:
 //
-//   OnStart, OnceStart, OnStop, OnceStop, OnOpen, OnceOpen, OnError, OnceError,
-//   OnDataError, OnceDataError, OnAuthenticated, OnceAuthenticated
+//   OnStart, OnStartOnce, OnStop, OnStopOnce, OnOpen, OnOpenOnce, OnError, OnErrorOnce,
+//   OnDataError, OnDataErrorOnce, OnAuthenticated, OnAuthenticatedOnce
 //
 // ERRORS
 //

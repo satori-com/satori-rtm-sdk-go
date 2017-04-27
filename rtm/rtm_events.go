@@ -25,7 +25,7 @@ func (rtm *RTM) OnStopped(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceStopped(callback func()) {
+func (rtm *RTM) OnStoppedOnce(callback func()) {
 	rtm.Once(EVENT_STOPPED, func(data interface{}) {
 		callback()
 	})
@@ -35,7 +35,7 @@ func (rtm *RTM) OnLeaveStopped(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceLeaveStopped(callback func()) {
+func (rtm *RTM) OnLeaveStoppedOnce(callback func()) {
 	rtm.Once(EVENT_LEAVE_STOPPED, func(data interface{}) {
 		callback()
 	})
@@ -48,7 +48,7 @@ func (rtm *RTM) OnConnecting(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceConnecting(callback func()) {
+func (rtm *RTM) OnConnectingOnce(callback func()) {
 	rtm.Once(EVENT_CONNECTING, func(data interface{}) {
 		callback()
 	})
@@ -58,7 +58,7 @@ func (rtm *RTM) OnLeaveConnecting(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceLeaveConnecting(callback func()) {
+func (rtm *RTM) OnLeaveConnectingOnce(callback func()) {
 	rtm.Once(EVENT_LEAVE_CONNECTING, func(data interface{}) {
 		callback()
 	})
@@ -71,7 +71,7 @@ func (rtm *RTM) OnConnected(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceConnected(callback func()) {
+func (rtm *RTM) OnConnectedOnce(callback func()) {
 	rtm.Once(EVENT_CONNECTED, func(data interface{}) {
 		callback()
 	})
@@ -81,7 +81,7 @@ func (rtm *RTM) OnLeaveConnected(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceLeaveConnected(callback func()) {
+func (rtm *RTM) OnLeaveConnectedOnce(callback func()) {
 	rtm.Once(EVENT_LEAVE_CONNECTED, func(data interface{}) {
 		callback()
 	})
@@ -94,7 +94,7 @@ func (rtm *RTM) OnAwaiting(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceAwaiting(callback func()) {
+func (rtm *RTM) OnAwaitingOnce(callback func()) {
 	rtm.Once(EVENT_AWAITING, func(data interface{}) {
 		callback()
 	})
@@ -104,7 +104,7 @@ func (rtm *RTM) OnLeaveAwaiting(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceLeaveAwaiting(callback func()) {
+func (rtm *RTM) OnLeaveAwaitingOnce(callback func()) {
 	rtm.Once(EVENT_LEAVE_AWAITING, func(data interface{}) {
 		callback()
 	})
@@ -117,7 +117,7 @@ func (rtm *RTM) OnStart(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceStart(callback func()) {
+func (rtm *RTM) OnStartOnce(callback func()) {
 	rtm.Once(EVENT_START, func(data interface{}) {
 		callback()
 	})
@@ -128,7 +128,7 @@ func (rtm *RTM) OnStop(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceStop(callback func()) {
+func (rtm *RTM) OnStopOnce(callback func()) {
 	rtm.Once(EVENT_STOP, func(data interface{}) {
 		callback()
 	})
@@ -139,7 +139,7 @@ func (rtm *RTM) OnOpen(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceOpen(callback func()) {
+func (rtm *RTM) OnOpenOnce(callback func()) {
 	rtm.Once(EVENT_OPEN, func(data interface{}) {
 		callback()
 	})
@@ -151,7 +151,7 @@ func (rtm *RTM) OnError(callback func(err RTMError)) interface{} {
 		callback(err)
 	})
 }
-func (rtm *RTM) OnceError(callback func(err RTMError)) {
+func (rtm *RTM) OnErrorOnce(callback func(err RTMError)) {
 	rtm.Once(EVENT_ERROR, func(data interface{}) {
 		err := data.(RTMError)
 		callback(err)
@@ -164,7 +164,7 @@ func (rtm *RTM) OnDataError(callback func(err RTMError)) interface{} {
 		callback(err)
 	})
 }
-func (rtm *RTM) OnceDataError(callback func(err RTMError)) {
+func (rtm *RTM) OnDataErrorOnce(callback func(err RTMError)) {
 	rtm.Once(EVENT_DATA_ERROR, func(data interface{}) {
 		err := data.(RTMError)
 		callback(err)
@@ -176,7 +176,7 @@ func (rtm *RTM) OnAuthenticated(callback func()) interface{} {
 		callback()
 	})
 }
-func (rtm *RTM) OnceAuthenticated(callback func()) {
+func (rtm *RTM) OnAuthenticatedOnce(callback func()) {
 	rtm.Once(EVENT_AUTHENTICATED, func(data interface{}) {
 		callback()
 	})

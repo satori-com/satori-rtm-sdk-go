@@ -27,7 +27,7 @@ func ExampleRTM_Publish() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -48,7 +48,7 @@ func ExampleRTM_Publish_types() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -89,7 +89,7 @@ func ExampleRTM_PublishAck_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -122,7 +122,7 @@ func ExampleRTM_PublishAck_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -147,7 +147,7 @@ func ExampleRTM_Search() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -180,7 +180,7 @@ func ExampleRTM_Write_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -213,7 +213,7 @@ func ExampleRTM_Write_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -244,7 +244,7 @@ func ExampleRTM_Read_simple() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -280,7 +280,7 @@ func ExampleRTM_Read_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -335,7 +335,7 @@ func ExampleRTM_Subscribe() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -404,7 +404,7 @@ func ExampleRTM_Subscribe_processErrors() {
 
 	// Wait for client is connected
 	connected := make(chan bool)
-	client.OnceConnected(func() {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -434,7 +434,7 @@ func ExampleRTM() {
 	}
 
 	authEvent := make(chan bool)
-	client.OnceAuthenticated(func() {
+	client.OnAuthenticatedOnce(func() {
 		logger.Info("Succesfully authenticated")
 		authEvent <- true
 	})
