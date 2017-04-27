@@ -765,7 +765,7 @@ func (rtm *RTM) connect() error {
 			err = rtm.handleMessage(message)
 			if err != nil {
 				logger.Error(err)
-				rtm.Fire(EVENT_DATA_ERROR, RTMError{
+				rtm.Fire(EVENT_ERROR, RTMError{
 					Code:   ERROR_CODE_PDU,
 					Reason: err,
 				})
@@ -835,6 +835,7 @@ func (rtm *RTM) socketSend(action string, body interface{}, ack bool) (<-chan pd
 			Code:   ERROR_CODE_TRANSPORT,
 			Reason: err,
 		})
+		rtm.Fire(EVENT_CLOSE, nil)
 		return nil, err
 	}
 
@@ -848,6 +849,7 @@ func (rtm *RTM) socketRead() (pdu.RTMQuery, error) {
 			Code:   ERROR_CODE_TRANSPORT,
 			Reason: err,
 		})
+		rtm.Fire(EVENT_CLOSE, nil)
 		return pdu.RTMQuery{}, err
 	}
 

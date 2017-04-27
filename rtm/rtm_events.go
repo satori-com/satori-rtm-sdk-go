@@ -14,7 +14,6 @@ const (
 	EVENT_OPEN             = "open"
 	EVENT_CLOSE            = "close"
 	EVENT_ERROR            = "error"
-	EVENT_DATA_ERROR       = "dataError"
 	EVENT_AUTHENTICATED    = "authenticated"
 )
 
@@ -153,19 +152,6 @@ func (rtm *RTM) OnError(callback func(err RTMError)) interface{} {
 }
 func (rtm *RTM) OnErrorOnce(callback func(err RTMError)) {
 	rtm.Once(EVENT_ERROR, func(data interface{}) {
-		err := data.(RTMError)
-		callback(err)
-	})
-}
-
-func (rtm *RTM) OnDataError(callback func(err RTMError)) interface{} {
-	return rtm.On(EVENT_DATA_ERROR, func(data interface{}) {
-		err := data.(RTMError)
-		callback(err)
-	})
-}
-func (rtm *RTM) OnDataErrorOnce(callback func(err RTMError)) {
-	rtm.Once(EVENT_DATA_ERROR, func(data interface{}) {
 		err := data.(RTMError)
 		callback(err)
 	})
