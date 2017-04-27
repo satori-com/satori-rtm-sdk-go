@@ -78,14 +78,14 @@
 //
 // ERRORS
 //
-// When subscribing to the OnError event, callback function will always get RTMError type
+// When subscribing to the OnError event, callback function will always get RTMError type.
+// RTMError contains two fields:
+//
+//   Code
+//   Reason
+//
 // Error "Code" can be compared with the following types to determine type of Error
 //
-//   client.OnError(func(err RTMError) {
-//     logger.Info(err.Code)
-//   })
-//
-//   Codes:
 //    ERROR_CODE_APPLICATION    - Application layer errors. Occur when creating new client with wrong params, getting
 //                                error response from RTM, etc
 //    ERROR_CODE_TRANSPORT      - Transport layer errors. Occur if RTM client failed to send/read message
@@ -93,6 +93,14 @@
 //    ERROR_CODE_PDU            - Occur when receiving Error PDU response from RTM
 //    ERROR_CODE_INVALID_JSON   - Occur if you try to send wrong json PDU. E.g. when you try to send invalid json.RawMessage
 //    ERROR_CODE_AUTHENTICATION - All authentication-related errors
+//
+// Error Code example:
+//   client.OnError(func(err RTMError) {
+//     if err.Code == ERROR_CODE_AUTHENTICATION {
+//       // Auth issue
+//       logger.Error(err.Reason)
+//     }
+//   })
 //
 //
 // SUBSCRIPTIONS
