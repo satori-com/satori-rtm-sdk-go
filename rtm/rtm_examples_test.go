@@ -312,9 +312,10 @@ func ExampleRTM_Subscribe() {
 		AuthProvider: authProvider,
 	})
 
-	listener := subscription.NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		logger.Info(string(message))
+	listener := subscription.Listener{
+		OnData: func(message json.RawMessage) {
+			logger.Info(string(message))
+		},
 	}
 	client.Subscribe(
 		"<your-channel>",
@@ -361,26 +362,27 @@ func ExampleRTM_Subscribe_processErrors() {
 		AuthProvider: authProvider,
 	})
 
-	listener := subscription.NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		// Got message
-		logger.Info(string(message))
-	}
-	listener.OnSubscribed = func(sok pdu.SubscribeOk) {
-		// Successfully subscribed
-		logger.Info(sok)
-	}
-	listener.OnSubscriptionInfo = func(info pdu.SubscriptionInfo) {
-		// Got "subscription/info" from RTM
-		logger.Warn(info)
-	}
-	listener.OnSubscriptionError = func(err pdu.SubscriptionError) {
-		// Got "subscription/error" from RTM
-		logger.Error(errors.New(err.Error + "; " + err.Reason))
-	}
-	listener.OnUnsubscribed = func(unsub pdu.UnsubscribeBodyResponse) {
-		// Successfully unsubscribed
-		logger.Info(unsub)
+	listener := subscription.Listener{
+		OnData: func(message json.RawMessage) {
+			// Got message
+			logger.Info(string(message))
+		},
+		OnSubscribed: func(sok pdu.SubscribeOk) {
+			// Successfully subscribed
+			logger.Info(sok)
+		},
+		OnSubscriptionInfo: func(info pdu.SubscriptionInfo) {
+			// Got "subscription/info" from RTM
+			logger.Warn(info)
+		},
+		OnSubscriptionError: func(err pdu.SubscriptionError) {
+			// Got "subscription/error" from RTM
+			logger.Error(errors.New(err.Error + "; " + err.Reason))
+		},
+		OnUnsubscribed: func(unsub pdu.UnsubscribeBodyResponse) {
+			// Successfully unsubscribed
+			logger.Info(unsub)
+		},
 	}
 
 	client.Subscribe(

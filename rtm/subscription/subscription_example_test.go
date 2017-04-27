@@ -9,16 +9,18 @@ import (
 
 // Creates new listener instance and specifies several callbacks
 func ExampleNewListener() {
-	listener := NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		// Got message
-		logger.Info(string(message))
+	listener := Listener{
+		OnData: func(message json.RawMessage) {
+			// Got message
+			logger.Info(string(message))
+		},
+		OnSubscribeError: func(err pdu.SubscribeError) {
+			// Subscribe error
+			logger.Error(errors.New(err.Error + "; " + err.Reason))
+		},
+		OnSubscribed: func(sok pdu.SubscribeOk) {
+			logger.Info("Successfully subscribed from position: " + sok.Position)
+		},
 	}
-	listener.OnSubscribeError = func(err pdu.SubscribeError) {
-		// Subscribe error
-		logger.Error(errors.New(err.Error + "; " + err.Reason))
-	}
-	listener.OnSubscribed = func(sok pdu.SubscribeOk) {
-		logger.Info("Successfully subscribed from position: " + sok.Position)
-	}
+	logger.Info(listener)
 }

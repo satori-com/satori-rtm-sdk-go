@@ -5,6 +5,12 @@ import (
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 )
 
+// You should create listener instance to define application functionality based on subscription state changes
+// or subscription events.
+// For example, you can define callback for when a channel receives a message, when the application
+// subscribes or unsubscribes to a channel, or gets the errors.
+//
+// You should specify callbacks to subscribe to events.
 type Listener struct {
 	// Called when the client receives a message from the RTM Service that was published to the subscription.
 	OnData func(json.RawMessage)
@@ -29,13 +35,4 @@ type Listener struct {
 
 	// Called when the client receives a subscription error from the RTM Service.
 	OnSubscriptionError func(pdu.SubscriptionError)
-}
-
-// Creates listener instance to define application functionality based on subscription state changes or subscription events.
-// For example, you can define callback for when a channel receives a message, when the application
-// subscribes or unsubscribes to a channel, or gets the errors.
-//
-// You should override callbacks to subscribe to events.
-func NewListener() Listener {
-	return Listener{}
 }

@@ -118,9 +118,10 @@ func TestStates(t *testing.T) {
 func TestDataChannel(t *testing.T) {
 	msgC := make(chan string, 3)
 
-	listener := NewListener()
-	listener.OnData = func(data json.RawMessage) {
-		msgC <- string(data)
+	listener := Listener{
+		OnData: func(data json.RawMessage) {
+			msgC <- string(data)
+		},
 	}
 	config := Config{
 		SubscriptionId: "reliable",
@@ -156,9 +157,10 @@ func TestDataChannel(t *testing.T) {
 func TestOnError(t *testing.T) {
 	event := make(chan bool)
 
-	listener := NewListener()
-	listener.OnSubscribeError = func(err pdu.SubscribeError) {
-		event <- true
+	listener := Listener{
+		OnSubscribeError: func(err pdu.SubscribeError) {
+			event <- true
+		},
 	}
 	sub := New(Config{
 		SubscriptionId: "reliable",
@@ -212,9 +214,10 @@ func TestSubscription_GetSubscriptionId(t *testing.T) {
 func TestEvents(t *testing.T) {
 	event := make(chan bool)
 
-	listener := NewListener()
-	listener.OnSubscribed = func(data pdu.SubscribeOk) {
-		event <- true
+	listener := Listener{
+		OnSubscribed: func(data pdu.SubscribeOk) {
+			event <- true
+		},
 	}
 	sub := New(Config{
 		SubscriptionId: "test",
@@ -296,15 +299,16 @@ func TestStructTransfer(t *testing.T) {
 
 	occurred := make(chan bool)
 
-	listener := NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		var msg Message
-		json.Unmarshal(message, &msg)
+	listener := Listener{
+		OnData: func(message json.RawMessage) {
+			var msg Message
+			json.Unmarshal(message, &msg)
 
-		if msg.Who != "zebra" || reflect.DeepEqual(&msg.Where, []float32{34.134358, -118.321506}) {
-			t.Fatal("Wrong decoded message")
-		}
-		occurred <- true
+			if msg.Who != "zebra" || reflect.DeepEqual(&msg.Where, []float32{34.134358, -118.321506}) {
+				t.Fatal("Wrong decoded message")
+			}
+			occurred <- true
+		},
 	}
 	sub := New(Config{
 		SubscriptionId: "test123",
@@ -334,30 +338,31 @@ func TestSubscriptionEvents(t *testing.T) {
 	var subId string = "test123"
 	event := make(chan bool)
 
-	listener := NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		if string(message) != "hello" {
-			t.Fatal("Wrong OnData message")
-		}
-		event <- true
-	}
-	listener.OnSubscribed = func(sok pdu.SubscribeOk) {
-		if sok.Position != "123456789" {
-			t.Fatal("Wrong position in OnSubscribed")
-		}
-		event <- true
-	}
-	listener.OnSubscriptionInfo = func(info pdu.SubscriptionInfo) {
-		if info.Info != "sub_info" || info.Reason != "sub_reason" {
-			t.Fatal("Wrong reason or info in OnInfo")
-		}
-		event <- true
-	}
-	listener.OnSubscriptionError = func(err pdu.SubscriptionError) {
-		if err.Reason != "sub_reason" || err.Error != "sub_error" {
-			t.Fatal("Wrong reason or info in OnSubscriptionError")
-		}
-		event <- true
+	listener := Listener{
+		OnData: func(message json.RawMessage) {
+			if string(message) != "hello" {
+				t.Fatal("Wrong OnData message")
+			}
+			event <- true
+		},
+		OnSubscribed: func(sok pdu.SubscribeOk) {
+			if sok.Position != "123456789" {
+				t.Fatal("Wrong position in OnSubscribed")
+			}
+			event <- true
+		},
+		OnSubscriptionInfo: func(info pdu.SubscriptionInfo) {
+			if info.Info != "sub_info" || info.Reason != "sub_reason" {
+				t.Fatal("Wrong reason or info in OnInfo")
+			}
+			event <- true
+		},
+		OnSubscriptionError: func(err pdu.SubscriptionError) {
+			if err.Reason != "sub_reason" || err.Error != "sub_error" {
+				t.Fatal("Wrong reason or info in OnSubscriptionError")
+			}
+			event <- true
+		},
 	}
 
 	sub := New(Config{
@@ -418,12 +423,13 @@ func waitEvent(event <-chan bool) error {
 func TestSubscriptionMemoryLeak(t *testing.T) {
 	event := make(chan bool)
 
-	listener := NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		if string(message) != "hello" {
-			t.Fatal("Wrong OnData message")
-		}
-		event <- true
+	listener := Listener{
+		OnData: func(message json.RawMessage) {
+			if string(message) != "hello" {
+				t.Fatal("Wrong OnData message")
+			}
+			event <- true
+		},
 	}
 	sub := New(Config{
 		SubscriptionId: "test",

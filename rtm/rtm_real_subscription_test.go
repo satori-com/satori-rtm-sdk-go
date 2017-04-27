@@ -26,15 +26,16 @@ func TestWrongPosition(t *testing.T) {
 	}
 	event := make(chan int)
 
-	listener := subscription.NewListener()
-	listener.OnSubscribeError = func(err pdu.SubscribeError) {
-		if err.Error != "invalid_format" {
-			t.Fatal("Wrong subscription error")
-		}
-		event <- 1
-	}
-	listener.OnSubscribed = func(sok pdu.SubscribeOk) {
-		event <- 2
+	listener := subscription.Listener{
+		OnSubscribeError: func(err pdu.SubscribeError) {
+			if err.Error != "invalid_format" {
+				t.Fatal("Wrong subscription error")
+			}
+			event <- 1
+		},
+		OnSubscribed: func(sok pdu.SubscribeOk) {
+			event <- 2
+		},
 	}
 	client.Subscribe(
 		channel,
@@ -84,9 +85,10 @@ func TestMultipleSubscription(t *testing.T) {
 	var errorOccured = false
 
 	errC := make(chan bool)
-	listener := subscription.NewListener()
-	listener.OnSubscribeError = func(err pdu.SubscribeError) {
-		errC <- true
+	listener := subscription.Listener{
+		OnSubscribeError: func(err pdu.SubscribeError) {
+			errC <- true
+		},
 	}
 	client.Subscribe(
 		channel,
@@ -107,9 +109,10 @@ func TestMultipleSubscription(t *testing.T) {
 	}()
 
 	event := make(chan bool)
-	listener = subscription.NewListener()
-	listener.OnSubscribed = func(sok pdu.SubscribeOk) {
-		event <- true
+	listener = subscription.Listener{
+		OnSubscribed: func(sok pdu.SubscribeOk) {
+			event <- true
+		},
 	}
 	client.Subscribe(
 		channel,
@@ -129,10 +132,12 @@ func TestMultipleSubscription(t *testing.T) {
 		wg.Done()
 	}()
 
-	listener = subscription.NewListener()
-	listener.OnSubscribeError = func(err pdu.SubscribeError) {
-		errC <- true
+	listener = subscription.Listener{
+		OnSubscribeError: func(err pdu.SubscribeError) {
+			errC <- true
+		},
 	}
+
 	client.Subscribe(
 		channel,
 		subscription.SIMPLE,
@@ -179,21 +184,22 @@ func TestSimpleSubscription(t *testing.T) {
 
 	expected := []int{0, 1, 2}
 
-	listener := subscription.NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		i, _ := strconv.Atoi(string(message))
-		if expected[0] != i {
-			t.Fatal("Wrong message order or wrong message")
-		}
-		expected = expected[1:]
-		wg.Done()
+	listener := subscription.Listener{
+		OnData: func(message json.RawMessage) {
+			i, _ := strconv.Atoi(string(message))
+			if expected[0] != i {
+				t.Fatal("Wrong message order or wrong message")
+			}
+			expected = expected[1:]
+			wg.Done()
+		},
+		OnSubscribed: func(pdu.SubscribeOk) {
+			for i := 0; i < 3; i++ {
+				client.Publish(channel, i)
+			}
+		},
 	}
-	listener.OnSubscribed = func(pdu.SubscribeOk) {
-		for i := 0; i < 3; i++ {
-			client.Publish(channel, i)
-		}
 
-	}
 	client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{}, listener)
 
 	wait := make(chan bool)
@@ -226,17 +232,17 @@ func TestSubscriptionFilter(t *testing.T) {
 	subscribed := make(chan bool)
 	expected := []string{"{\"test\":1}", "{\"test\":3}"}
 
-	listener := subscription.NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		if expected[0] != string(message) {
-			err = errors.New("Wrong actiual data. Expected: " + expected[0] + " Actual: " + string(message))
-		}
-
-		expected = expected[1:]
-		wg.Done()
-	}
-	listener.OnSubscribed = func(pdu.SubscribeOk) {
-		subscribed <- true
+	listener := subscription.Listener{
+		OnData: func(message json.RawMessage) {
+			if expected[0] != string(message) {
+				err = errors.New("Wrong actiual data. Expected: " + expected[0] + " Actual: " + string(message))
+			}
+			expected = expected[1:]
+			wg.Done()
+		},
+		OnSubscribed: func(pdu.SubscribeOk) {
+			subscribed <- true
+		},
 	}
 	client.Subscribe(
 		channel,
@@ -277,16 +283,17 @@ func TestSubscriptionAfterDisconnect(t *testing.T) {
 	subscribed := make(chan bool)
 	expected := []string{"1", "2"}
 
-	listener := subscription.NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		if string(message) != expected[0] {
-			t.Fatal("Wrong subscription message")
-		}
-		expected = expected[1:]
-		msgC <- true
-	}
-	listener.OnSubscribed = func(pdu.SubscribeOk) {
-		subscribed <- true
+	listener := subscription.Listener{
+		OnData: func(message json.RawMessage) {
+			if string(message) != expected[0] {
+				t.Fatal("Wrong subscription message")
+			}
+			expected = expected[1:]
+			msgC <- true
+		},
+		OnSubscribed: func(pdu.SubscribeOk) {
+			subscribed <- true
+		},
 	}
 	client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{}, listener)
 
@@ -336,20 +343,21 @@ func TestRTM_Unsubscribe(t *testing.T) {
 	msgC := make(chan bool)
 	subscribed := make(chan bool)
 
-	listener := subscription.NewListener()
-	listener.OnData = func(message json.RawMessage) {
-		if len(expected) == 0 {
-			t.Fatal("We got the message, but should not")
-		}
-		msg, _ := strconv.Atoi(string(message))
-		if msg != expected[0] {
-			t.Fatal("Wrong message order or wrong message")
-		}
-		expected = expected[1:]
-		msgC <- true
-	}
-	listener.OnSubscribed = func(pdu.SubscribeOk) {
-		subscribed <- true
+	listener := subscription.Listener{
+		OnData: func(message json.RawMessage) {
+			if len(expected) == 0 {
+				t.Fatal("We got the message, but should not")
+			}
+			msg, _ := strconv.Atoi(string(message))
+			if msg != expected[0] {
+				t.Fatal("Wrong message order or wrong message")
+			}
+			expected = expected[1:]
+			msgC <- true
+		},
+		OnSubscribed: func(pdu.SubscribeOk) {
+			subscribed <- true
+		},
 	}
 	client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{}, listener)
 

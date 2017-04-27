@@ -116,15 +116,16 @@
 //
 // You should specify listeners when creating a new subscription. Example:
 //
-//   listener := subscription.NewListener()
-//   listener.OnSubscribed = func(sok pdu.SubscribeOk) {
-//     // Successfully subscribed
-//     logger.Info(sok)
-//   }
-//   listener.OnSubscriptionError = func(err pdu.SubscriptionError) {
-//     // Got "subscription error" from RTM
-//     logger.Error(errors.New(err.Error + "; " + err.Reason))
-//   }
+//   listener := subscription.Listener{
+//     OnSubscribed: func(sok pdu.SubscribeOk) {
+//       // Successfully subscribed
+//       logger.Info(sok)
+//     },
+//     OnSubscriptionError: func(err pdu.SubscriptionError) {
+//       // Got "subscription error" from RTM
+//       logger.Error(errors.New(err.Error + "; " + err.Reason))
+//     },
+// 	 }
 //   err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{}, listener)
 //
 //
@@ -136,11 +137,12 @@
 //     Where []float32 `json:"where"`
 //   }
 //
-//   listener := subscription.NewListener()
-//   listener.OnData = func(data json.RawMessage) {
-//     var message Message
-//     json.Unmarshal(data, &message)
-//     logger.Info(message.Who, message.Where)
+//   listener := subscription.Listener{
+//     OnData: func(data json.RawMessage) {
+//       var message Message
+//       json.Unmarshal(data, &message)
+//       logger.Info(message.Who, message.Where)
+//     },
 //   }
 //   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{}, listener)
 //
