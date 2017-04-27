@@ -157,7 +157,7 @@ func (s *Subscription) ProcessSubscribe(data pdu.SubscribeOk) {
 		s.listener.OnSubscribed(data)
 	}
 
-	logger.Info("Subscription '" + s.subscriptionId + "' is subscribed now")
+	logger.Info("Subscribed (" + s.subscriptionId + ")")
 }
 
 func (s *Subscription) ProcessDisconnect() {
@@ -171,7 +171,7 @@ func (s *Subscription) ProcessInfo(data pdu.SubscriptionInfo) {
 		s.listener.OnSubscriptionInfo(data)
 	}
 
-	logger.Warn("Falling behind for '" + s.subscriptionId + "'. Fast forward subscription")
+	logger.Warn("Subscription Info (" + s.subscriptionId + "): " + data.Info + ": " + data.Reason)
 }
 
 func (s *Subscription) ProcessSubscribeError(data pdu.SubscribeError) {
@@ -181,7 +181,7 @@ func (s *Subscription) ProcessSubscribeError(data pdu.SubscribeError) {
 		s.listener.OnSubscribeError(data)
 	}
 
-	logger.Warn("Error occured when subscribing to '" + s.subscriptionId + "'")
+	logger.Warn("Subscribe Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
 }
 
 func (s *Subscription) ProcessSubscriptionError(data pdu.SubscriptionError) {
@@ -191,7 +191,7 @@ func (s *Subscription) ProcessSubscriptionError(data pdu.SubscriptionError) {
 	if s.listener.OnSubscriptionError != nil {
 		s.listener.OnSubscriptionError(data)
 	}
-	logger.Warn("Subscription error for '" + s.subscriptionId + "'")
+	logger.Warn("Subscription Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
 }
 
 func (s *Subscription) ProcessUnsubscribe(data pdu.UnsubscribeBodyResponse) {
@@ -202,7 +202,7 @@ func (s *Subscription) ProcessUnsubscribeError(data pdu.UnsubscribeError) {
 	if s.listener.OnUnsubscribeError != nil {
 		s.listener.OnUnsubscribeError(data)
 	}
-	logger.Warn("Error occured when unsubscribing from '" + s.subscriptionId + "'")
+	logger.Warn("Unsubscribe Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
 }
 
 func (s *Subscription) ProcessData(data pdu.SubscriptionData) {
