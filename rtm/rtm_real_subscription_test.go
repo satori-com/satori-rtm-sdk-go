@@ -185,13 +185,15 @@ func TestSimpleSubscription(t *testing.T) {
 	expected := []int{0, 1, 2}
 
 	listener := subscription.Listener{
-		OnData: func(message json.RawMessage) {
-			i, _ := strconv.Atoi(string(message))
-			if expected[0] != i {
-				t.Fatal("Wrong message order or wrong message")
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				i, _ := strconv.Atoi(string(message))
+				if expected[0] != i {
+					t.Fatal("Wrong message order or wrong message")
+				}
+				expected = expected[1:]
+				wg.Done()
 			}
-			expected = expected[1:]
-			wg.Done()
 		},
 		OnSubscribed: func(pdu.SubscribeOk) {
 			for i := 0; i < 3; i++ {
@@ -233,12 +235,14 @@ func TestSubscriptionFilter(t *testing.T) {
 	expected := []string{"{\"test\":1}", "{\"test\":3}"}
 
 	listener := subscription.Listener{
-		OnData: func(message json.RawMessage) {
-			if expected[0] != string(message) {
-				err = errors.New("Wrong actiual data. Expected: " + expected[0] + " Actual: " + string(message))
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				if expected[0] != string(message) {
+					err = errors.New("Wrong actiual data. Expected: " + expected[0] + " Actual: " + string(message))
+				}
+				expected = expected[1:]
+				wg.Done()
 			}
-			expected = expected[1:]
-			wg.Done()
 		},
 		OnSubscribed: func(pdu.SubscribeOk) {
 			subscribed <- true
@@ -284,12 +288,14 @@ func TestSubscriptionAfterDisconnect(t *testing.T) {
 	expected := []string{"1", "2"}
 
 	listener := subscription.Listener{
-		OnData: func(message json.RawMessage) {
-			if string(message) != expected[0] {
-				t.Fatal("Wrong subscription message")
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				if string(message) != expected[0] {
+					t.Fatal("Wrong subscription message")
+				}
+				expected = expected[1:]
+				msgC <- true
 			}
-			expected = expected[1:]
-			msgC <- true
 		},
 		OnSubscribed: func(pdu.SubscribeOk) {
 			subscribed <- true
@@ -344,16 +350,18 @@ func TestRTM_Unsubscribe(t *testing.T) {
 	subscribed := make(chan bool)
 
 	listener := subscription.Listener{
-		OnData: func(message json.RawMessage) {
-			if len(expected) == 0 {
-				t.Fatal("We got the message, but should not")
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				if len(expected) == 0 {
+					t.Fatal("We got the message, but should not")
+				}
+				msg, _ := strconv.Atoi(string(message))
+				if msg != expected[0] {
+					t.Fatal("Wrong message order or wrong message")
+				}
+				expected = expected[1:]
+				msgC <- true
 			}
-			msg, _ := strconv.Atoi(string(message))
-			if msg != expected[0] {
-				t.Fatal("Wrong message order or wrong message")
-			}
-			expected = expected[1:]
-			msgC <- true
 		},
 		OnSubscribed: func(pdu.SubscribeOk) {
 			subscribed <- true

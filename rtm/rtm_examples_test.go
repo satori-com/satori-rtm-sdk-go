@@ -1,7 +1,6 @@
 package rtm_test
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
@@ -313,8 +312,10 @@ func ExampleRTM_Subscribe() {
 	})
 
 	listener := subscription.Listener{
-		OnData: func(message json.RawMessage) {
-			logger.Info(string(message))
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				logger.Info(string(message))
+			}
 		},
 	}
 	client.Subscribe(
@@ -363,9 +364,11 @@ func ExampleRTM_Subscribe_processErrors() {
 	})
 
 	listener := subscription.Listener{
-		OnData: func(message json.RawMessage) {
-			// Got message
-			logger.Info(string(message))
+		OnData: func(data pdu.SubscriptionData) {
+			// Got messages
+			for _, message := range data.Messages {
+				logger.Info(string(message))
+			}
 		},
 		OnSubscribed: func(sok pdu.SubscribeOk) {
 			// Successfully subscribed

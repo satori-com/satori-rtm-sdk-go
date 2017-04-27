@@ -1,7 +1,6 @@
 package subscription
 
 import (
-	"encoding/json"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 )
 
@@ -13,13 +12,13 @@ import (
 // You should specify callbacks to subscribe to events.
 type Listener struct {
 	// Called when the client receives a message from the RTM Service that was published to the subscription.
-	OnData func(json.RawMessage)
+	OnData func(pdu.SubscriptionData)
 
 	// Called after successful subscription
 	OnSubscribed func(pdu.SubscribeOk)
 
 	// Called after successful unsubscription
-	OnUnsubscribed func(data pdu.UnsubscribeBodyResponse)
+	OnUnsubscribed func(pdu.UnsubscribeBodyResponse)
 
 	// Called on every received message that has Position param
 	OnPosition func(string)

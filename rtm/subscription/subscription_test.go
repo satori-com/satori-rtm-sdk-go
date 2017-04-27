@@ -119,8 +119,10 @@ func TestDataChannel(t *testing.T) {
 	msgC := make(chan string, 3)
 
 	listener := Listener{
-		OnData: func(data json.RawMessage) {
-			msgC <- string(data)
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				msgC <- string(message)
+			}
 		},
 	}
 	config := Config{
@@ -300,14 +302,16 @@ func TestStructTransfer(t *testing.T) {
 	occurred := make(chan bool)
 
 	listener := Listener{
-		OnData: func(message json.RawMessage) {
-			var msg Message
-			json.Unmarshal(message, &msg)
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				var msg Message
+				json.Unmarshal(message, &msg)
 
-			if msg.Who != "zebra" || reflect.DeepEqual(&msg.Where, []float32{34.134358, -118.321506}) {
-				t.Fatal("Wrong decoded message")
+				if msg.Who != "zebra" || reflect.DeepEqual(&msg.Where, []float32{34.134358, -118.321506}) {
+					t.Fatal("Wrong decoded message")
+				}
+				occurred <- true
 			}
-			occurred <- true
 		},
 	}
 	sub := New(Config{
@@ -339,11 +343,13 @@ func TestSubscriptionEvents(t *testing.T) {
 	event := make(chan bool)
 
 	listener := Listener{
-		OnData: func(message json.RawMessage) {
-			if string(message) != "hello" {
-				t.Fatal("Wrong OnData message")
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				if string(message) != "hello" {
+					t.Fatal("Wrong OnData message")
+				}
+				event <- true
 			}
-			event <- true
 		},
 		OnSubscribed: func(sok pdu.SubscribeOk) {
 			if sok.Position != "123456789" {
@@ -424,11 +430,13 @@ func TestSubscriptionMemoryLeak(t *testing.T) {
 	event := make(chan bool)
 
 	listener := Listener{
-		OnData: func(message json.RawMessage) {
-			if string(message) != "hello" {
-				t.Fatal("Wrong OnData message")
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				if string(message) != "hello" {
+					t.Fatal("Wrong OnData message")
+				}
+				event <- true
 			}
-			event <- true
 		},
 	}
 	sub := New(Config{

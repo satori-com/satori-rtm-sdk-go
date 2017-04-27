@@ -208,10 +208,8 @@ func (s *Subscription) ProcessUnsubscribeError(data pdu.UnsubscribeError) {
 func (s *Subscription) ProcessData(data pdu.SubscriptionData) {
 	s.trackPosition(data.Position)
 
-	for _, message := range data.Messages {
-		if s.listener.OnData != nil {
-			s.listener.OnData(message)
-		}
+	if s.listener.OnData != nil {
+		s.listener.OnData(data)
 	}
 }
 

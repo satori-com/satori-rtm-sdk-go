@@ -138,10 +138,12 @@
 //   }
 //
 //   listener := subscription.Listener{
-//     OnData: func(data json.RawMessage) {
-//       var message Message
-//       json.Unmarshal(data, &message)
-//       logger.Info(message.Who, message.Where)
+//     OnData: func(data pdu.SubscriptionData) {
+//       for _, msg := range data.Messages {
+//         var message Message
+//         json.Unmarshal(msg, &message)
+//         logger.Info(message.Who, message.Where)
+//       }
 //     },
 //   }
 //   sub, err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{}, listener)
