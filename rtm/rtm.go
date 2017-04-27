@@ -737,14 +737,17 @@ func (rtm *RTM) Start() {
 	rtm.Fire(EVENT_START, nil)
 }
 
-func (rtm *RTM) connect() error {
+func (rtm *RTM) connect() RTMError {
 	var err error
 
 	logger.Info("Connecting to", rtm.endpoint)
 	rtm.conn, err = connection.New(rtm.endpoint + "?appkey=" + rtm.appKey)
 
 	if err != nil {
-		return err
+		return RTMError{
+			Code:   ERROR_CODE_TRANSPORT,
+			Reason: err,
+		}
 	}
 
 	// Subscribe to all messages
@@ -771,19 +774,17 @@ func (rtm *RTM) connect() error {
 		err = rtm.opts.AuthProvider.Authenticate(rtm.conn)
 		if err != nil {
 			// Authentication error
-			logger.Error(err)
-			rtm.Fire(EVENT_ERROR, RTMError{
+			return RTMError{
 				Code:   ERROR_CODE_AUTHENTICATION,
 				Reason: err,
-			})
-			return err
+			}
 		}
 		rtm.Fire(EVENT_AUTHENTICATED, nil)
 	}
 
 	rtm.Fire(EVENT_OPEN, nil)
 
-	return nil
+	return RTMError{}
 }
 
 // Stops the client. The SDK begins to close the WebSocket connection and

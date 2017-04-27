@@ -27,8 +27,8 @@ func (rtm *RTM) initFSM() {
 				logger.Info("Client: Enter Connecting")
 				rtm.Fire(EVENT_CONNECTING, nil)
 				err := rtm.connect()
-				if err != nil {
-					logger.Error(err)
+				if err.Reason != nil {
+					logger.Error(err.Reason)
 					rtm.Fire(EVENT_ERROR, err)
 				}
 			},
@@ -78,7 +78,7 @@ func (rtm *RTM) initFSM() {
 
 				go func() {
 					reconnectTime := rtm.nextReconnectInterval()
-					logger.Info("Client: Reconnect after ", reconnectTime, "sec")
+					logger.Info("Client: Reconnect after", reconnectTime)
 					<-time.After(reconnectTime)
 					rtm.reconnectCount++
 					if f.CurrentState() == STATE_AWAITING {
