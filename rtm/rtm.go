@@ -741,7 +741,7 @@ func (rtm *RTM) Start() {
 	rtm.Fire(EVENT_START, nil)
 }
 
-func (rtm *RTM) connect() RTMError {
+func (rtm *RTM) connect() error {
 	var err error
 
 	logger.Info("Connecting to", rtm.endpoint)
@@ -788,7 +788,7 @@ func (rtm *RTM) connect() RTMError {
 
 	rtm.Fire(EVENT_OPEN, nil)
 
-	return RTMError{}
+	return nil
 }
 
 // Stops the client. The SDK begins to close the WebSocket connection and

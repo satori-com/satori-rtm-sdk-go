@@ -27,8 +27,9 @@ func (rtm *RTM) initFSM() {
 				logger.Info("Client: Enter Connecting")
 				rtm.Fire(EVENT_CONNECTING, nil)
 				err := rtm.connect()
-				if err.Reason != nil {
-					logger.Error(err.Reason)
+				if err != nil {
+					rtmErr := err.(RTMError)
+					logger.Error(rtmErr.Reason)
 					rtm.Fire(EVENT_ERROR, err)
 				}
 			},
