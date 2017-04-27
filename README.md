@@ -68,7 +68,7 @@ Tests require an active RTM to be available. The tests require `credentials.json
 The `credentials.json` file must include the following key-value pairs:
 ```json
 {
-  "endpoint": "<SATORI_HOST>",
+  "endpoint": "wss://<SATORI_HOST>/",
   "appkey": "<APP_KEY>",
   "auth_role_name": "<ROLE_NAME>",
   "auth_role_secret_key": "<ROLE_SECRET_KEY>",
