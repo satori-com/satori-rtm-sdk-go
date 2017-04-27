@@ -12,8 +12,8 @@ import (
 func TestWrongEndpoint(t *testing.T) {
 	client, _ := New("ws://wrong-host-name.www", "123", Options{})
 	event := make(chan bool)
-	client.Once(EVENT_ERROR, func(err interface{}) {
-		if !strings.Contains(err.(error).Error(), "no such host") {
+	client.OnceError(func(err RTMError) {
+		if !strings.Contains(err.Reason.Error(), "no such host") {
 			t.Fatal("Wrong error returned")
 		}
 		event <- true
@@ -40,11 +40,11 @@ func TestWrongAuth(t *testing.T) {
 		AuthProvider: authProvider,
 	})
 	event := make(chan bool)
-	client.Once(EVENT_ERROR, func(err interface{}) {
+	client.OnceError(func(err RTMError) {
 		// Try to convert to AuthError
 		var conv pdu.Error
-		err = json.Unmarshal([]byte(err.(error).Error()), &conv)
-		if err == nil {
+
+		if e := json.Unmarshal([]byte(err.Reason.Error()), &conv); e == nil {
 			if conv.Error != "authentication_failed" {
 				t.Fatal("Wrong error type returned")
 			}
@@ -71,8 +71,7 @@ func TestClientDisconnect(t *testing.T) {
 		t.Skip("Unable to find credentials. Skip test")
 	}
 	event := make(chan bool)
-	// Multiple event handler
-	client.On(EVENT_CONNECTED, func(interface{}) {
+	client.OnConnected(func() {
 		event <- true
 	})
 	defer client.Stop()
