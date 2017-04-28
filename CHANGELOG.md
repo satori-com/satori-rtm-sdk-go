@@ -1,4 +1,4 @@
-v0.2.0
+v0.2.0 (2017-04-28)
 -------------------
 * New Subscription model **[no-backward-compatibility]**:
   - Get rid of data channel;
