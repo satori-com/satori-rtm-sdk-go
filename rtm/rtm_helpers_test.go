@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+type credentialsT struct {
+	Endpoint          string `json:"endpoint"`
+	AppKey            string `json:"appkey"`
+	RoleName          string `json:"auth_role_name"`
+	RoleSecretKey     string `json:"auth_role_secret_key"`
+	RestrictedChannel string `json:"auth_restricted_channel"`
+}
+
 /*
  *	Helper functions
  */
@@ -19,7 +27,7 @@ func getRTM() (*RTM, error) {
 		return &RTM{}, err
 	}
 
-	authProvider := auth.New("superuser", credentials.RoleSecretKey)
+	authProvider := auth.New(credentials.RoleName, credentials.RoleSecretKey)
 	client, _ := New(credentials.Endpoint, credentials.AppKey, Options{
 		AuthProvider: authProvider,
 	})
