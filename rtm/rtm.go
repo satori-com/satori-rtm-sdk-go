@@ -133,7 +133,7 @@
 //       // Got "subscription error" from RTM
 //       logger.Error(errors.New(err.Error + "; " + err.Reason))
 //     },
-// 	 }
+//   }
 //   err := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{}, listener)
 //
 //
