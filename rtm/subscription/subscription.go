@@ -17,14 +17,10 @@ package subscription
 import (
 	"encoding/json"
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
-	"github.com/satori-com/satori-rtm-sdk-go/observer"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 )
 
 const (
-	// Maximal queue of incoming messages. If the queue is full, no new messages will be read from the Socket.
-	MAX_QUEUE = 10000
-
 	STATE_UNSUBSCRIBED = 0
 	STATE_SUBSCRIBED   = 1
 )
@@ -73,6 +69,13 @@ var (
 	}
 )
 
+type Config struct {
+	SubscriptionId string
+	Opts           pdu.SubscribeBodyOpts
+	Listener       Listener
+	Mode           Mode
+}
+
 // Subscription mode struct. Check RELIABLE, SIMPLE and ADVANCED vars
 type Mode struct {
 	trackPosition bool
@@ -83,38 +86,20 @@ type Mode struct {
 type Subscription struct {
 	state          int
 	subscriptionId string
-	channel        chan json.RawMessage
 	mode           Mode
 	position       string
 	body           pdu.SubscribeBody
-
-	// Implements Observer behavior
-	observer.Observer
+	listener       Listener
 }
 
-// Creates new subscription instance
-//
-// Example:
-//  sub, err := New("my-channel", RELIABLE, pdu.SubscribeBodyOpts{
-//    Filter: "SELECT * FROM `test`",
-//    History: pdu.SubscribeHistory{
-//      Count: 1,
-//      Age: 10,
-//    },
-//  })
-//
-//  sub2, err := New("my-simple-subscription", RELIABLE, pdu.SubscribeBodyOpts{})
-//
-func New(subscriptionId string, m Mode, opts pdu.SubscribeBodyOpts) *Subscription {
-	s := &Subscription{
-		Observer: observer.New(),
-	}
+func New(config Config) *Subscription {
+	s := &Subscription{}
 	s.state = STATE_UNSUBSCRIBED
-	s.mode = m
-	s.channel = make(chan json.RawMessage, MAX_QUEUE)
-	s.subscriptionId = subscriptionId
+	s.mode = config.Mode
+	s.subscriptionId = config.SubscriptionId
 	s.position = ""
 
+	opts := config.Opts
 	s.body.Filter = opts.Filter
 	s.body.History = opts.History
 	s.body.Period = opts.Period
@@ -128,12 +113,9 @@ func New(subscriptionId string, m Mode, opts pdu.SubscribeBodyOpts) *Subscriptio
 		s.body.Channel = s.subscriptionId
 	}
 
-	return s
-}
+	s.listener = config.Listener
 
-// Gets data from the subscription
-func (s *Subscription) Data() <-chan json.RawMessage {
-	return s.channel
+	return s
 }
 
 // Gets PDU to subscribe
@@ -166,63 +148,78 @@ func (s *Subscription) UnsubscribePdu() pdu.RTMQuery {
 	return query
 }
 
-func (s *Subscription) OnSubscribe(data pdu.SubscribeOk) {
+func (s *Subscription) ProcessSubscribe(data pdu.SubscribeOk) {
 	s.trackPosition(data.Position)
 	s.state = STATE_SUBSCRIBED
 	s.body.Position = ""
-	s.Fire("subscribed", data)
 
-	logger.Info("Subscription '" + s.subscriptionId + "' is subscribed now")
+	if s.listener.OnSubscribed != nil {
+		s.listener.OnSubscribed(data)
+	}
+
+	logger.Info("Subscribed (" + s.subscriptionId + ")")
 }
 
-func (s *Subscription) OnDisconnect() {
-	s.markUnsubscribe()
+func (s *Subscription) ProcessDisconnect() {
+	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 }
 
-func (s *Subscription) OnInfo(data pdu.SubscriptionInfo) {
+func (s *Subscription) ProcessInfo(data pdu.SubscriptionInfo) {
 	s.trackPosition(data.Position)
-	s.Fire("info", data)
 
-	logger.Warn("Falling behind for '" + s.subscriptionId + "'. Fast forward subscription")
+	if s.listener.OnSubscriptionInfo != nil {
+		s.listener.OnSubscriptionInfo(data)
+	}
+
+	logger.Warn("Subscription Info (" + s.subscriptionId + "): " + data.Info + ": " + data.Reason)
 }
 
-func (s *Subscription) OnSubscribeError(data pdu.SubscribeError) {
-	s.markUnsubscribe()
-	s.Fire("subscribeError", data)
+func (s *Subscription) ProcessSubscribeError(data pdu.SubscribeError) {
+	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 
-	logger.Warn("Error occured when subscribing to '" + s.subscriptionId + "'")
+	if s.listener.OnSubscribeError != nil {
+		s.listener.OnSubscribeError(data)
+	}
+
+	logger.Warn("Subscribe Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
 }
 
-func (s *Subscription) OnSubscriptionError(data pdu.SubscriptionError) {
+func (s *Subscription) ProcessSubscriptionError(data pdu.SubscriptionError) {
 	s.trackPosition(data.Position)
-	s.markUnsubscribe()
-	s.Fire("subscriptionError", data)
+	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 
-	logger.Warn("Subscription error for '" + s.subscriptionId + "'")
+	if s.listener.OnSubscriptionError != nil {
+		s.listener.OnSubscriptionError(data)
+	}
+	logger.Warn("Subscription Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
 }
 
-func (s *Subscription) OnUnsubscribeError(data pdu.UnsubscribeError) {
-	s.Fire("unsubscribeError", data)
-	logger.Warn("Error occured when unsubscribing from '" + s.subscriptionId + "'")
+func (s *Subscription) ProcessUnsubscribe(data pdu.UnsubscribeBodyResponse) {
+	s.markUnsubscribe(data)
 }
 
-func (s *Subscription) OnData(data pdu.SubscriptionData) {
-	for _, message := range data.Messages {
-		// @Warning
-		// Sending messages can be locked if the user reads slower than the messages rps
-		// "Channel" is a buffered channel with the MAX_QUEUE size
-		s.channel <- message
+func (s *Subscription) ProcessUnsubscribeError(data pdu.UnsubscribeError) {
+	if s.listener.OnUnsubscribeError != nil {
+		s.listener.OnUnsubscribeError(data)
+	}
+	logger.Warn("Unsubscribe Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
+}
 
-		// Allow user to use several ways how to get data. Via channel of using Observer event
-		s.Fire("data", message)
+func (s *Subscription) ProcessData(data pdu.SubscriptionData) {
+	s.trackPosition(data.Position)
+
+	if s.listener.OnData != nil {
+		s.listener.OnData(data)
 	}
 }
 
-// Marks current subscription as "unsubscribed"
-func (s *Subscription) markUnsubscribe() {
+func (s *Subscription) markUnsubscribe(data pdu.UnsubscribeBodyResponse) {
 	if s.state == STATE_SUBSCRIBED {
 		s.state = STATE_UNSUBSCRIBED
-		s.Fire("unsubscribed", nil)
+
+		if s.listener.OnUnsubscribed != nil {
+			s.listener.OnUnsubscribed(data)
+		}
 	}
 }
 
@@ -232,7 +229,9 @@ func (s *Subscription) trackPosition(position string) {
 		s.position = position
 	}
 
-	s.Fire("position", position)
+	if s.listener.OnPosition != nil {
+		s.listener.OnPosition(position)
+	}
 }
 
 // Gets current subscription state

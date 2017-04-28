@@ -8,42 +8,105 @@ import (
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/auth"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/subscription"
+	"math"
 	"math/rand"
-	"strconv"
 	"time"
 )
 
 func ExampleRTM_Publish() {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
 	client.Start()
 
-	for i := 0; i < 3; i++ {
-		err := client.Publish("<your-channel>", time.Now().String()+" Message"+strconv.Itoa(i))
-		if err != nil {
-			logger.Error(err)
-		}
-	}
-	logger.Info("Sent 3 messages")
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	client.Publish("<your-channel>", Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
+	logger.Info("Message has been sent")
+}
+
+func ExampleRTM_Publish_types() {
+	authProvider := auth.New("<your-role>", "<your-rolekey>")
+	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+		AuthProvider: authProvider,
+	})
+	client.Start()
+
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	var i int = 42
+	client.Publish("<your-channel>", i)
+
+	var ui8 uint8 = 1
+	client.Publish("<your-channel>", ui8)
+
+	var f32 float32 = 1.2345
+	client.Publish("<your-channel>", f32)
+
+	var f64 float64 = math.Pi
+	client.Publish("<your-channel>", f64)
+
+	var b bool = true
+	client.Publish("<your-channel>", b)
+
+	var str string = "Hello world!"
+	client.Publish("<your-channel>", str)
+
+	// Null message
+	client.Publish("<your-channel>", nil)
 }
 
 func ExampleRTM_PublishAck_simple() {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
 	client.Start()
 
-	// Publish 3 messages with Ack one after one
-	for i := 0; i < 3; i++ {
-		<-client.PublishAck("<your-channel>", time.Now().String()+" Ack message"+strconv.Itoa(i))
-	}
-	logger.Info("Sent 3 messages with Ack")
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	response := <-client.PublishAck("<your-channel>", Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
+	logger.Info(response)
 }
 
 func ExampleRTM_PublishAck_processErrors() {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
@@ -52,18 +115,27 @@ func ExampleRTM_PublishAck_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
+	})
 	client.Start()
 
-	// Publish 3 messages with Ack one after one
-	for i := 0; i < 3; i++ {
-		c := <-client.PublishAck("<your-channel>", time.Now().String()+" Ack message"+strconv.Itoa(i))
-		if c.Err != nil {
-			logger.Error(c.Err)
-		} else {
-			logger.Info("Got callback:", c.Response)
-		}
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	c := <-client.PublishAck("<your-channel>", Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
+	if c.Err != nil {
+		logger.Error(c.Err)
+	} else {
+		logger.Info("Got callback:", c.Response)
 	}
-	logger.Info("Sent 3 messages with Ack")
 }
 
 func ExampleRTM_Search() {
@@ -73,9 +145,9 @@ func ExampleRTM_Search() {
 	})
 	client.Start()
 
-	// Wait for connected state
+	// Wait for client is connected
 	connected := make(chan bool)
-	client.On("enterConnected", func(interface{}) {
+	client.OnConnectedOnce(func() {
 		connected <- true
 	})
 	<-connected
@@ -95,15 +167,36 @@ func ExampleRTM_Search() {
 }
 
 func ExampleRTM_Write_simple() {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
 	client.Start()
-	client.Write("<your-channel>", "data111")
+
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	client.Write("<your-channel>", Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
 }
 
 func ExampleRTM_Write_processErrors() {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
@@ -112,9 +205,23 @@ func ExampleRTM_Write_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
+	})
 
 	client.Start()
-	w := <-client.Write("<your-channel>", "data111")
+
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	w := <-client.Write("<your-channel>", Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
 
 	if w.Err != nil {
 		logger.Error(w.Err)
@@ -124,20 +231,40 @@ func ExampleRTM_Write_processErrors() {
 }
 
 func ExampleRTM_Read_simple() {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
 	client.Start()
 
-	<-client.Write("<your-channel>", "data111")
-	// We can wait for ack callback to be sure the data is there
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	// Write message and wait for Ack to be sure that the message is there
+	<-client.Write("<your-channel>", Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
 
 	r := <-client.Read("<your-channel>")
 	fmt.Printf("Postition: %s; Data: %s\n", string(r.Response.Position), string(r.Response.Message))
 }
 
 func ExampleRTM_Read_processErrors() {
+	type Message struct {
+		Who   string    `json:"who"`
+		Where []float32 `json:"where"`
+	}
+
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
@@ -146,10 +273,23 @@ func ExampleRTM_Read_processErrors() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
+	})
 	client.Start()
 
-	w := <-client.Write("<your-channel>", "data111")
-	// We can wait for ack callback to be sure the data is there
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	// Write message and wait for Ack to be sure that the message is there
+	w := <-client.Write("<your-channel>", Message{
+		Who:   "zebra",
+		Where: []float32{34.134358, -118.321506},
+	})
 	if w.Err != nil {
 		logger.Error(w.Err)
 	}
@@ -157,38 +297,130 @@ func ExampleRTM_Read_processErrors() {
 	r := <-client.Read("<your-channel>")
 	if r.Err != nil {
 		logger.Error(r.Err)
+	} else {
+		fmt.Printf("Postition: %s; Data: %s\n", string(r.Response.Position), string(r.Response.Message))
 	}
-	fmt.Printf("Postition: %s; Data: %s\n", string(r.Response.Position), string(r.Response.Message))
 }
 
 func ExampleRTM_Subscribe() {
+	type Message struct {
+		Id int
+	}
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
 
-	sub, _ := client.Subscribe("<your-channel>", subscription.RELIABLE, pdu.SubscribeBodyOpts{
-		Filter: "SELECT * FROM `test`",
-		History: pdu.SubscribeHistory{
-			Count: 1,
-			Age:   10,
+	listener := subscription.Listener{
+		OnData: func(data pdu.SubscriptionData) {
+			for _, message := range data.Messages {
+				logger.Info(string(message))
+			}
 		},
-	})
+	}
+	client.Subscribe(
+		"<your-channel>",
+		subscription.RELIABLE,
+		pdu.SubscribeBodyOpts{
+			Filter: "SELECT * FROM `test`",
+			History: pdu.SubscribeHistory{
+				Count: 1,
+				Age:   10,
+			},
+		},
+		listener,
+	)
 
 	client.Start()
+
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
 
 	// Send random messages to the channel
 	go func() {
 		for {
-			client.Publish("<your-channel>", strconv.Itoa(rand.Intn(10)))
+			client.Publish("<your-channel>", Message{
+				Id: rand.Intn(10),
+			})
 			time.Sleep(200 * time.Millisecond)
 		}
 	}()
 
-	for {
-		message := <-sub.Data()
-		fmt.Println("Got message: " + string(message))
+	// Exit after 10 seconds
+	<-time.After(10 * time.Second)
+}
+
+func ExampleRTM_Subscribe_processErrors() {
+	type Message struct {
+		Id int
 	}
+	authProvider := auth.New("<your-role>", "<your-rolekey>")
+	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+		AuthProvider: authProvider,
+	})
+
+	listener := subscription.Listener{
+		OnData: func(data pdu.SubscriptionData) {
+			// Got messages
+			for _, message := range data.Messages {
+				logger.Info(string(message))
+			}
+		},
+		OnSubscribed: func(sok pdu.SubscribeOk) {
+			// Successfully subscribed
+			logger.Info(sok)
+		},
+		OnSubscriptionInfo: func(info pdu.SubscriptionInfo) {
+			// Got "subscription/info" from RTM
+			logger.Warn(info)
+		},
+		OnSubscriptionError: func(err pdu.SubscriptionError) {
+			// Got "subscription/error" from RTM
+			logger.Error(errors.New(err.Error + "; " + err.Reason))
+		},
+		OnUnsubscribed: func(unsub pdu.UnsubscribeBodyResponse) {
+			// Successfully unsubscribed
+			logger.Info(unsub)
+		},
+	}
+
+	client.Subscribe(
+		"<your-channel>",
+		subscription.RELIABLE,
+		pdu.SubscribeBodyOpts{
+			Filter: "SELECT * FROM `test`",
+			History: pdu.SubscribeHistory{
+				Count: 1,
+				Age:   10,
+			},
+		},
+		listener,
+	)
+	client.Start()
+
+	// Wait for client is connected
+	connected := make(chan bool)
+	client.OnConnectedOnce(func() {
+		connected <- true
+	})
+	<-connected
+
+	// Send random messages to the channel
+	go func() {
+		for {
+			client.Publish("<your-channel>", Message{
+				Id: rand.Intn(10),
+			})
+			time.Sleep(200 * time.Millisecond)
+		}
+	}()
+
+	// Exit after 10 seconds
+	<-time.After(10 * time.Second)
 }
 
 func ExampleRTM() {
@@ -202,12 +434,12 @@ func ExampleRTM() {
 	}
 
 	authEvent := make(chan bool)
-	client.Once("authenticated", func(data interface{}) {
+	client.OnAuthenticatedOnce(func() {
 		logger.Info("Succesfully authenticated")
 		authEvent <- true
 	})
-	client.On("error", func(err interface{}) {
-		logger.Error(err.(error))
+	client.OnError(func(err rtm.RTMError) {
+		logger.Error(err.Reason)
 		authEvent <- true
 	})
 

@@ -36,7 +36,7 @@ func getRTM() (*RTM, error) {
 
 func waitForConnected(rtm *RTM) error {
 	connected := make(chan bool)
-	rtm.On("enterConnected", func(interface{}) {
+	rtm.On(EVENT_CONNECTED, func(interface{}) {
 		connected <- true
 	})
 	select {

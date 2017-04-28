@@ -1,3 +1,7 @@
+// RTM Connection.
+//
+// Access the RTM Service on the connection level to connect to the RTM Service, send and receive PDUs, and wait
+// for responses from the RTM Service.
 package connection
 
 import (
@@ -30,6 +34,8 @@ type acksType struct {
 	mutex     sync.Mutex
 }
 
+// Creates a new instance for a specific RTM Service endpoint.
+// Establishes Websocket connection to the Service.
 func New(endpoint string) (*Connection, error) {
 	var err error
 
@@ -45,6 +51,7 @@ func New(endpoint string) (*Connection, error) {
 	return conn, nil
 }
 
+// Closes a specific connection. The close event is propagated to all listeners.
 func (c *Connection) Close() {
 	defer func() {
 		// Channel can be already closed. Call recover to avoid panic when closing closed channel
@@ -62,6 +69,14 @@ func (c *Connection) Close() {
 	close(c.acks.ch)
 }
 
+// Sends a Protocol Data Unit (PDU) to the RTM Service. The typed response from
+// the RTM Service is passed to the go-channel.
+//
+// This method combines the specified operation with the PDU body into a PDU and
+// sends it to the RTM Service. The PDU body must be able to be serialized into a JSON object.
+//
+// This method should be used when RTM sends multiple PDUs response. All incoming PDUs from the
+// RTM Service will be passed to go-channel.
 func (c *Connection) SendAck(action string, body json.RawMessage) (<-chan pdu.RTMQuery, error) {
 	query := pdu.RTMQuery{
 		Action: action,
@@ -75,6 +90,10 @@ func (c *Connection) SendAck(action string, body json.RawMessage) (<-chan pdu.RT
 	return ch, c.socketSend(query)
 }
 
+// Sends a Protocol Data Unit (PDU) to the RTM Service.
+//
+// This method combines the specified operation with the PDU body into a PDU and
+// sends it to the RTM Service. The PDU body must be able to be serialized into a JSON object.
 func (c *Connection) Send(action string, body json.RawMessage) error {
 	query := pdu.RTMQuery{
 		Action: action,
@@ -101,6 +120,7 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 	return nil
 }
 
+// Reads a new message from the Websocket connection and convert the message to pdu.RTMQuery
 func (c *Connection) Read() (pdu.RTMQuery, error) {
 	var response pdu.RTMQuery
 
