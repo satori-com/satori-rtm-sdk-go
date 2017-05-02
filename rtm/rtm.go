@@ -31,7 +31,7 @@
 //  OnStopped, OnStoppedOnce, OnLeaveStopped, OnLeaveStoppedOnce
 //
 //  // STATE_CONNECTING state when starting connecting to endpoint
-//	OnConnecting, OnConnectingOnce, OnLeaveConnecting, OnLeaveConnectingOnce
+//  OnConnecting, OnConnectingOnce, OnLeaveConnecting, OnLeaveConnectingOnce
 //
 //  // STATE_CONNECTED state when client established connection and ready to publish/read/write/etc
 //  OnConnected, OnConnectedOnce, OnLeaveConnected, OnLeaveConnectedOnce
