@@ -14,7 +14,7 @@ import (
 )
 
 func ExampleRTM_Publish() {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -32,7 +32,7 @@ func ExampleRTM_Publish() {
 	})
 	<-connected
 
-	client.Publish("<your-channel>", Message{
+	client.Publish("<your-channel>", Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -76,7 +76,7 @@ func ExampleRTM_Publish_types() {
 }
 
 func ExampleRTM_PublishAck_simple() {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -94,7 +94,7 @@ func ExampleRTM_PublishAck_simple() {
 	})
 	<-connected
 
-	response := <-client.PublishAck("<your-channel>", Message{
+	response := <-client.PublishAck("<your-channel>", Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -102,7 +102,7 @@ func ExampleRTM_PublishAck_simple() {
 }
 
 func ExampleRTM_PublishAck_processErrors() {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -127,7 +127,7 @@ func ExampleRTM_PublishAck_processErrors() {
 	})
 	<-connected
 
-	c := <-client.PublishAck("<your-channel>", Message{
+	c := <-client.PublishAck("<your-channel>", Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -167,7 +167,7 @@ func ExampleRTM_Search() {
 }
 
 func ExampleRTM_Write_simple() {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -185,14 +185,14 @@ func ExampleRTM_Write_simple() {
 	})
 	<-connected
 
-	client.Write("<your-channel>", Message{
+	client.Write("<your-channel>", Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
 }
 
 func ExampleRTM_Write_processErrors() {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -218,7 +218,7 @@ func ExampleRTM_Write_processErrors() {
 	})
 	<-connected
 
-	w := <-client.Write("<your-channel>", Message{
+	w := <-client.Write("<your-channel>", Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -231,7 +231,7 @@ func ExampleRTM_Write_processErrors() {
 }
 
 func ExampleRTM_Read_simple() {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -250,7 +250,7 @@ func ExampleRTM_Read_simple() {
 	<-connected
 
 	// Write message and wait for Ack to be sure that the message is there
-	<-client.Write("<your-channel>", Message{
+	<-client.Write("<your-channel>", Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -260,7 +260,7 @@ func ExampleRTM_Read_simple() {
 }
 
 func ExampleRTM_Read_processErrors() {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -286,7 +286,7 @@ func ExampleRTM_Read_processErrors() {
 	<-connected
 
 	// Write message and wait for Ack to be sure that the message is there
-	w := <-client.Write("<your-channel>", Message{
+	w := <-client.Write("<your-channel>", Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -303,7 +303,7 @@ func ExampleRTM_Read_processErrors() {
 }
 
 func ExampleRTM_Subscribe() {
-	type Message struct {
+	type Point struct {
 		Id int
 	}
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
@@ -343,7 +343,7 @@ func ExampleRTM_Subscribe() {
 	// Send random messages to the channel
 	go func() {
 		for {
-			client.Publish("<your-channel>", Message{
+			client.Publish("<your-channel>", Point{
 				Id: rand.Intn(10),
 			})
 			time.Sleep(200 * time.Millisecond)
@@ -355,7 +355,7 @@ func ExampleRTM_Subscribe() {
 }
 
 func ExampleRTM_Subscribe_processErrors() {
-	type Message struct {
+	type Point struct {
 		Id int
 	}
 	authProvider := auth.New("<your-role>", "<your-rolekey>")
@@ -412,7 +412,7 @@ func ExampleRTM_Subscribe_processErrors() {
 	// Send random messages to the channel
 	go func() {
 		for {
-			client.Publish("<your-channel>", Message{
+			client.Publish("<your-channel>", Point{
 				Id: rand.Intn(10),
 			})
 			time.Sleep(200 * time.Millisecond)

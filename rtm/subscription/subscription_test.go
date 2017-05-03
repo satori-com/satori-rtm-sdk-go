@@ -294,7 +294,7 @@ func TestReliableSubscription(t *testing.T) {
 }
 
 func TestStructTransfer(t *testing.T) {
-	type Message struct {
+	type Point struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -304,7 +304,7 @@ func TestStructTransfer(t *testing.T) {
 	listener := Listener{
 		OnData: func(data pdu.SubscriptionData) {
 			for _, message := range data.Messages {
-				var msg Message
+				var msg Point
 				json.Unmarshal(message, &msg)
 
 				if msg.Who != "zebra" || reflect.DeepEqual(&msg.Where, []float32{34.134358, -118.321506}) {
@@ -320,7 +320,7 @@ func TestStructTransfer(t *testing.T) {
 		Listener:       listener,
 	})
 
-	message, _ := json.Marshal(&Message{
+	message, _ := json.Marshal(&Point{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})

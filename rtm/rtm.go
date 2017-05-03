@@ -140,17 +140,17 @@
 // Set OnData callback to get subscription messages
 //
 //   // Example: Get messages and cast them to Message type
-//   type Message struct {
+//   type Point struct {
 //     Who   string    `json:"who"`
 //     Where []float32 `json:"where"`
 //   }
 //
 //   listener := subscription.Listener{
 //     OnData: func(data pdu.SubscriptionData) {
-//       for _, msg := range data.Messages {
-//         var message Message
-//         json.Unmarshal(msg, &message)
-//         logger.Info(message.Who, message.Where)
+//       for _, message := range data.Messages {
+//         var point Point
+//         json.Unmarshal(message, &point)
+//         logger.Info(point.Who, point.Where)
 //       }
 //     },
 //   }
