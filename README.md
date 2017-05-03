@@ -19,6 +19,8 @@ Import the SDK as a part of your application:
 import "github.com/satori-com/satori-rtm-sdk-go/rtm"
 ```
 
+*It is highly recommended to use tags to lock the SDK version for your project.*
+
 ## Documentation and Examples
 
 You can view the latest Go SDK documentation here:
