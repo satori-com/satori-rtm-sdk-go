@@ -154,6 +154,7 @@ func (s *Subscription) ProcessSubscribe(data pdu.SubscribeOk) {
 	s.body.Position = ""
 
 	if s.listener.OnSubscribed != nil {
+		defer s.catchCallbackPanic()
 		s.listener.OnSubscribed(data)
 	}
 
@@ -168,6 +169,7 @@ func (s *Subscription) ProcessInfo(data pdu.SubscriptionInfo) {
 	s.trackPosition(data.Position)
 
 	if s.listener.OnSubscriptionInfo != nil {
+		defer s.catchCallbackPanic()
 		s.listener.OnSubscriptionInfo(data)
 	}
 
@@ -178,6 +180,7 @@ func (s *Subscription) ProcessSubscribeError(data pdu.SubscribeError) {
 	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 
 	if s.listener.OnSubscribeError != nil {
+		defer s.catchCallbackPanic()
 		s.listener.OnSubscribeError(data)
 	}
 
@@ -189,6 +192,7 @@ func (s *Subscription) ProcessSubscriptionError(data pdu.SubscriptionError) {
 	s.markUnsubscribe(pdu.UnsubscribeBodyResponse{})
 
 	if s.listener.OnSubscriptionError != nil {
+		defer s.catchCallbackPanic()
 		s.listener.OnSubscriptionError(data)
 	}
 	logger.Warn("Subscription Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
@@ -200,6 +204,7 @@ func (s *Subscription) ProcessUnsubscribe(data pdu.UnsubscribeBodyResponse) {
 
 func (s *Subscription) ProcessUnsubscribeError(data pdu.UnsubscribeError) {
 	if s.listener.OnUnsubscribeError != nil {
+		defer s.catchCallbackPanic()
 		s.listener.OnUnsubscribeError(data)
 	}
 	logger.Warn("Unsubscribe Error (" + s.subscriptionId + "): " + data.Error + ": " + data.Reason)
@@ -209,6 +214,7 @@ func (s *Subscription) ProcessData(data pdu.SubscriptionData) {
 	s.trackPosition(data.Position)
 
 	if s.listener.OnData != nil {
+		defer s.catchCallbackPanic()
 		s.listener.OnData(data)
 	}
 }
@@ -218,6 +224,7 @@ func (s *Subscription) markUnsubscribe(data pdu.UnsubscribeBodyResponse) {
 		s.state = STATE_UNSUBSCRIBED
 
 		if s.listener.OnUnsubscribed != nil {
+			defer s.catchCallbackPanic()
 			s.listener.OnUnsubscribed(data)
 		}
 	}
@@ -230,6 +237,7 @@ func (s *Subscription) trackPosition(position string) {
 	}
 
 	if s.listener.OnPosition != nil {
+		defer s.catchCallbackPanic()
 		s.listener.OnPosition(position)
 	}
 }
@@ -242,4 +250,14 @@ func (s *Subscription) GetState() int {
 // Gets current subscription state
 func (s *Subscription) GetSubscriptionId() string {
 	return s.subscriptionId
+}
+
+func (s *Subscription) catchCallbackPanic() {
+	if r := recover(); r != nil {
+		logger.Warn("Callback function panic:", r)
+
+		if s.listener.OnPanicRecover != nil {
+			s.listener.OnPanicRecover(r)
+		}
+	}
 }
