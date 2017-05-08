@@ -458,3 +458,32 @@ func TestSubscriptionMemoryLeak(t *testing.T) {
 		}
 	}
 }
+
+func TestPanic(t *testing.T) {
+	defer func(){
+		if r := recover(); r != nil {
+			t.Fatal("Panic was not recovered: ", r)
+		}
+	}()
+
+	listener := Listener{
+		OnData: func(data pdu.SubscriptionData) {
+			panic("Panic!")
+		},
+		OnPanicRecover: func(r interface{}) {
+			if r.(string) != "Panic!" {
+				t.Fatal("Recover did not work properly")
+			}
+		},
+	}
+	sub := New(Config{
+		SubscriptionId: "test",
+		Mode:           RELIABLE,
+		Listener:       listener,
+	})
+	sub.ProcessData(pdu.SubscriptionData{
+		SubscriptionId: "test",
+		Position: "12345:1",
+		Messages: []json.RawMessage{},
+	})
+}

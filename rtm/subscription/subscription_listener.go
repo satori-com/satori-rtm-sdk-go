@@ -34,4 +34,7 @@ type Listener struct {
 
 	// Called when the client receives a subscription error from the RTM Service.
 	OnSubscriptionError func(pdu.SubscriptionError)
+
+	// Called when the callback function begins Panicking.
+	OnPanicRecover func(recover interface{})
 }
