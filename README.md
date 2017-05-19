@@ -4,17 +4,17 @@ Satori RTM SDK for Go (Golang)
 [![GitHub tag](https://img.shields.io/github/tag/satori-com/satori-rtm-sdk-go.svg)](https://github.com/satori-com/satori-rtm-sdk-go/tags)
 [![GoDoc Widget]][GoDoc]
 
-Use the Go SDK for the Satori platform to create server-based applications that use the RTM to publish and subscribe.  
-Follow https://www.satori.com/ to meet with Satori platform.
+Use the Go SDK for [the Satori platform](https://www.satori.com/) to create applications that use the
+RTM to publish and subscribe.
 
 ## Go SDK Installation
 
-Use a `go-get` tool or any go-compatible package manager to download the SDK:
+Use a `go-get` tool (or any go-compatible package manager) to download the SDK:
 ```
 go get github.com/satori-com/satori-rtm-sdk-go/rtm
 ```
 
-Import the SDK as a part of your application:
+Import the SDK in your go file:
 ```
 import "github.com/satori-com/satori-rtm-sdk-go/rtm"
 ```
@@ -23,26 +23,25 @@ import "github.com/satori-com/satori-rtm-sdk-go/rtm"
 
 ## Documentation and Examples
 
-You can view the latest Go SDK documentation here:
-https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm
-
-Documentation generates automatically during 1 hour after pushing to master.  
-Read more about the GODOC service: https://godoc.org/-/about
+Latest Go SDK documentation is [here](https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm)
 
 ## Logging and Debugging
 
-Go SDK uses STDOUT/STDERR to output information. To enable `debug mode` 
+Go SDK logs information to STDOUT/STDERR. To enable debug level,
 set DEBUG_SATORI_SDK environment variable to `true`:
 ```bash
-$ DEBUG_SATORI_SDK=true go run <your_app.go>
-```
-or 
-```bash
-$ export DEBUG_SATORI_SDK=true
-$ go run <your_app.go>
+$ DEBUG_SATORI_SDK=true go run <your_program.go>
 ```
 
-After enabling `debug mode` you will get all requests to RTM and all responses in raw. Example:
+or 
+
+```bash
+$ export DEBUG_SATORI_SDK=true
+$ go run <your_program.go>
+```
+
+Debug level outputs all underlying communication with RTM, in addition to SDK execution info.  
+Example:
 ```bash
 $ DEBUG_SATORI_SDK=true go run <your_app.go>
 [info] 2017/04/18 15:28:38.8129 Creating new RTM object
@@ -63,7 +62,7 @@ $ DEBUG_SATORI_SDK=true go run <your_app.go>
 
 ## Tests and Coverage Report
 
-Tests require an active RTM to be available. The tests require `credentials.json` to be populated with the RTM properties.
+Tests require a valid RTM endpoint; RTM credentials should be populated in `credentials.json`.
 
 The `credentials.json` file must include the following key-value pairs:
 ```json
