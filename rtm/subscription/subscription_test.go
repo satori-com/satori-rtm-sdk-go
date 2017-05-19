@@ -460,7 +460,7 @@ func TestSubscriptionMemoryLeak(t *testing.T) {
 }
 
 func TestPanic(t *testing.T) {
-	defer func(){
+	defer func() {
 		if r := recover(); r != nil {
 			t.Fatal("Panic was not recovered: ", r)
 		}
@@ -483,7 +483,7 @@ func TestPanic(t *testing.T) {
 	})
 	sub.ProcessData(pdu.SubscriptionData{
 		SubscriptionId: "test",
-		Position: "12345:1",
-		Messages: []json.RawMessage{},
+		Position:       "12345:1",
+		Messages:       []json.RawMessage{},
 	})
 }
