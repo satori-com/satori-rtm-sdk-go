@@ -85,7 +85,7 @@ You must use [DevPortal](https://developer.satori.com/) to create role and set c
 
 After setting up `credentials.json`, run SDK tests with the following commands:
 ```
-$ go get github.com/satori-com/satori-sdk-go/rtm_client
+$ go get github.com/satori-com/satori-sdk-go/rtm
 $ CREDENTIALS=/full/path/to/credentials.json go test ./src/github.com/satori-com/satori-sdk-go/...
 ```
 
