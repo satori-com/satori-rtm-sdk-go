@@ -43,7 +43,7 @@ const (
 // We define message struct that we are going to publish
 type Animal struct {
 	Who   string    `json:"name"`
-	Where []float64 `json:"age"`
+	Where []float64 `json:"where"`
 }
 
 func main() {
