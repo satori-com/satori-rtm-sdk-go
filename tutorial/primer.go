@@ -18,32 +18,33 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/satori-com/satori-rtm-sdk-go/logger"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/auth"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/subscription"
+	"math/rand"
+	"os"
 	"time"
 )
 
 const (
 	// Replace these values with your project's credentials
 	// from Dev Portal (https://developer.satori.com/#/projects).
-	ENDPOINT = "<ENDPOINT>"
-	APP_KEY  = "<APP_KEY>"
+	ENDPOINT = "YOUR_ENDPOINT"
+	APP_KEY  = "YOUR_APPKEY"
 
-	// Role and Secret are optional. Setting these to empty mean no authentication.
-	ROLE            = "<ROLE>"
-	ROLE_SECRET_KEY = "<ROLE_SECRET>"
+	// Role and Secret are optional. Setting these to empty string mean no authentication.
+	ROLE            = "YOUR_ROLE"
+	ROLE_SECRET_KEY = "YOUR_SECRET"
 
 	// Any channel name
-	CHANNEL = "animal_sightings"
+	CHANNEL = "animals"
 )
 
 // We define message struct that we are going to publish
 type Animal struct {
-	Who   string    `json:"name"`
-	Where []float64 `json:"where"`
+	Who   string     `json:"name"`
+	Where [2]float32 `json:"where"`
 }
 
 func main() {
@@ -61,7 +62,8 @@ func main() {
 
 	client, err := rtm.New(ENDPOINT, APP_KEY, options)
 	if err != nil {
-		logger.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// We just created a new client. The client is not connected yet and we will connect it later.
@@ -70,14 +72,14 @@ func main() {
 	//
 	// Let's use only two of them: OnConnected and OnError.
 	client.OnConnectedOnce(func() {
-		logger.Info("Connected to RTM!")
+		fmt.Println("Connected to RTM!")
 	})
 	client.OnError(func(err rtm.RTMError) {
-		logger.Error(err.Reason)
+		fmt.Println(err.Reason)
 	})
 
-	// For synchronisation reason we will use bool channel to be able to wait for an incoming message.
-	data_c := make(chan bool, 1)
+	// For synchronisation reason we will use typed channel (type Animal) to be able to collect all incoming messages
+	data_c := make(chan Animal)
 
 	// We create a subscription listener in order to receive callbacks
 	// for incoming data, state changes and errors.
@@ -90,24 +92,23 @@ func main() {
 			for _, message := range data.Messages {
 				var animal Animal
 				json.Unmarshal(message, &animal)
-				logger.Info("Got message: " + fmt.Sprintf("%+v", animal))
+				data_c <- animal
 			}
-			data_c <- true
 		},
 
-		// Called when the subscription is established. Once we subscribed we publish one message.
+		// Called when the subscription is established. Once we subscribed we create 2 demo animals that
+		// will randomly move.
 		// Be aware: All callbacks MUST NOT block the main thread. You should use go-routines in cases if you need
 		// to wait for some data/events/etc.
 		OnSubscribed: func(pdu.SubscribeOk) {
-			client.Publish(CHANNEL, Animal{
-				Who:   "Zebra",
-				Where: []float64{34.134358, -118.321506}},
-			)
+			// We have a function that will create an animal in a separate go-routine and will randomly change coords
+			go createAnimal(client, "zebra", 34.134358, -118.321506, 300*time.Millisecond)
+			go createAnimal(client, "giraffe", 34.22123, -118.336543, 1*time.Second)
 		},
 
 		// Called when failed to subscribe
 		OnSubscriptionError: func(err pdu.SubscriptionError) {
-			logger.Warn("Failed to subscribe: ", err.Error, err.Reason)
+			fmt.Println("Failed to subscribe: ", err.Error, err.Reason)
 		},
 	}
 
@@ -124,19 +125,23 @@ func main() {
 	// Our callbacks will catch all these events.
 	client.Start()
 
-	// Wait for a message in the data_c go channel to put our main thread to sleep
-	// (block).  As soon as SDK invokes our OnData callback
-	// (from another go-routine), we unblock the main thread.
-	// To avoid indefinite hang in case of a
-	// failure, the wait is limited to 10 second timeout.
-	select {
-	case <-data_c:
-	case <-time.After(10 * time.Second):
-		logger.Warn("Timeout: Unable to get the message")
+	// Now we have a subscription that will forward all incoming messages to our go-channel.
+	for animal := range data_c {
+		fmt.Printf("%+v\n", animal)
 	}
+}
 
-	// Stop the client with calling STOPPED callbacks and disconnect from RTM
-	client.Stop()
-
-	logger.Info("Done. Bye!")
+func createAnimal(client *rtm.RTM, who string, lat, long float32, sleep time.Duration) {
+	for {
+		client.Publish(CHANNEL, Animal{
+			Who:   who,
+			Where: [2]float32{lat, long}},
+		)
+		move := func(in float32) float32 {
+			return in + float32(rand.Intn(100)-50)/100000
+		}
+		lat = move(lat)
+		long = move(long)
+		time.Sleep(sleep)
+	}
 }
