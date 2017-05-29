@@ -56,7 +56,7 @@ func getCredentials() (credentialsT, error) {
 
 	content, err = ioutil.ReadFile(path)
 	if err != nil {
-		content, err = ioutil.ReadFile("../credentials.json")
+		content, err = ioutil.ReadFile("./credentials.json")
 	}
 
 	if err == nil {
