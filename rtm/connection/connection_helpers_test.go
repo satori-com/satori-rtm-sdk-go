@@ -1,9 +1,9 @@
 package connection
 
 import (
-	"os"
-	"io/ioutil"
 	"encoding/json"
+	"io/ioutil"
+	"os"
 )
 
 type credentialsT struct {

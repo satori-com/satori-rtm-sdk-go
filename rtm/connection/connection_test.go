@@ -1,9 +1,9 @@
 package connection
 
 import (
-	"testing"
-	"strings"
 	"encoding/json"
+	"strings"
+	"testing"
 	"time"
 )
 
