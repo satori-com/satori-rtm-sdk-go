@@ -12,8 +12,8 @@ func (rtm *RTM) initFSM() {
 		STATE_STOPPED: fsm.Events{
 			EVENT_STOPPED: func(f *fsm.FSM) {
 				logger.Info("Client: Enter Stopped")
-				rtm.Fire(EVENT_STOPPED, nil)
 				rtm.closeConnection()
+				rtm.Fire(EVENT_STOPPED, nil)
 			},
 			EVENT_LEAVE_STOPPED: func(f *fsm.FSM) {
 				rtm.Fire(EVENT_LEAVE_STOPPED, nil)
