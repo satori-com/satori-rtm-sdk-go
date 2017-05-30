@@ -107,6 +107,9 @@ func New(config Config) *Subscription {
 
 	s.body.FastForward = s.mode.fastForward
 
+	// Always use force flag to avoid resubscribing errors
+	s.body.Force = true
+
 	if len(s.body.Filter) > 0 {
 		s.body.SubscriptionId = s.subscriptionId
 	} else {
@@ -127,9 +130,6 @@ func (s *Subscription) SubscribePdu() pdu.RTMQuery {
 	if len(s.position) != 0 {
 		s.body.Position = s.position
 	}
-
-	// Always use force flag to avoid resubscribing errors
-	s.body.Force = true
 
 	query.Body, _ = json.Marshal(s.body)
 

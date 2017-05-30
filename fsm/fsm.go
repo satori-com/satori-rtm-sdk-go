@@ -12,11 +12,13 @@ package fsm
 import (
 	"errors"
 	"strings"
+	"sync"
 )
 
 type FSM struct {
 	currentState StateName
 	states       States
+	mutex        sync.RWMutex
 }
 
 var (
@@ -70,10 +72,16 @@ func (f *FSM) Transition(destination StateName) error {
 
 // Gets current state of the FSM instance
 func (f *FSM) CurrentState() StateName {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
+
 	return f.currentState
 }
 
 // Sets new state. Should not be called directly. Uses from Transition() only
 func (f *FSM) setState(state StateName) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
 	f.currentState = state
 }

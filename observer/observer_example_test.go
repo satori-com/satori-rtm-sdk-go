@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/satori-com/satori-rtm-sdk-go/observer"
-	"time"
 	"sync"
+	"time"
 )
 
 // Embed Observer behavior to a custom struct and call/catch events

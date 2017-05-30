@@ -2,9 +2,9 @@ package observer
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 	"time"
-	"sync"
 )
 
 type A struct {
