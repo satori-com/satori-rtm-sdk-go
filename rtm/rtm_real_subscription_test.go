@@ -409,3 +409,97 @@ func TestRTM_Unsubscribe(t *testing.T) {
 	case <-time.After(1 * time.Second):
 	}
 }
+
+func TestSubscribeAllWithoutConnection(t *testing.T) {
+	client, err := getRTM()
+	if err != nil {
+		t.Skip("Unable to find credentials. Skip test")
+	}
+
+	if client.subscribeAll() != ERROR_NOT_CONNECTED {
+		t.Fatal("Client is not connected, but we did not get the error")
+	}
+}
+
+func TestUnsubscribeFromNonExisting(t *testing.T) {
+	client, err := getRTM()
+	if err != nil {
+		t.Skip("Unable to find credentials. Skip test")
+	}
+
+	resp := <-client.Unsubscribe("non-existing-subscription")
+	if resp.Err == nil {
+		t.Fatal("We unsubscribed from non-existing subscription")
+	}
+	rtmErr := resp.Err.(RTMError)
+
+	if rtmErr.Code != ERROR_CODE_APPLICATION && rtmErr.Reason != ERROR_SUBSCRIPTION_NOT_FOUND {
+		t.Fatal("Wrong reason")
+	}
+}
+
+func TestHandleMessage(t *testing.T) {
+	channel := getChannel()
+	client, err := getRTM()
+	if err != nil {
+		t.Skip("Unable to find credentials. Skip test")
+	}
+
+	events := make(chan bool, 2)
+	listener := subscription.Listener{
+		OnSubscriptionInfo: func(err pdu.SubscriptionInfo) {
+			if err.Reason != "subscription_reason" || err.Info != "subscription_info" {
+				t.Fatal("Wrong info/reason")
+			}
+			events <- true
+		},
+		OnSubscriptionError: func(err pdu.SubscriptionError) {
+			if err.Reason != "subscription_error_reason" || err.Error != "subscription_error" {
+				t.Fatal("Wrong error/reason")
+			}
+			events <- true
+		},
+	}
+	client.Subscribe(channel, subscription.SIMPLE, pdu.SubscribeBodyOpts{}, listener)
+	client.handleMessage(pdu.RTMQuery{
+		Action: "rtm/subscription/info",
+		Body: json.RawMessage("{\"info\": \"subscription_info\", \"reason\": \"subscription_reason\", " +
+			"\"subscription_id\": \"" + channel + "\"}"),
+		Id: "1",
+	})
+
+	select {
+	case <-events:
+	case <-time.After(time.Second):
+		t.Fatal("Unable to process OnSubscriptionInfo")
+	}
+
+	client.handleMessage(pdu.RTMQuery{
+		Action: "rtm/subscription/error",
+		Body: json.RawMessage("{\"error\": \"subscription_error\", \"reason\": \"subscription_error_reason\", " +
+			"\"subscription_id\": \"" + channel + "\"}"),
+		Id: "2",
+	})
+
+	select {
+	case <-events:
+	case <-time.After(time.Second):
+		t.Fatal("Unable to process OnSubscriptionError")
+	}
+}
+
+func TestHandleBadFormattedJson(t *testing.T) {
+	client, err := getRTM()
+	if err != nil {
+		t.Skip("Unable to find credentials. Skip test")
+	}
+	err = client.handleMessage(pdu.RTMQuery{
+		Action: "rtm/subscription/info",
+		Body:   json.RawMessage("{\"info\": \"subscripti"),
+		Id:     "1",
+	})
+
+	if err == nil {
+		t.Fatal("Json Unmarshal decoded broken json")
+	}
+}

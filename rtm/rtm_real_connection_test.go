@@ -92,3 +92,14 @@ func TestClientDisconnect(t *testing.T) {
 		t.Fatal("Unable to connect after drop connection")
 	}
 }
+
+func TestClientNotConnected(t *testing.T) {
+	client, err := getRTM()
+	if err != nil {
+		t.Skip("Unable to find credentials. Skip test")
+	}
+
+	if client.IsConnected() {
+		t.Fatal("Client has CONNECTED state, but should not")
+	}
+}
