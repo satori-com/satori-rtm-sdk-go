@@ -54,7 +54,7 @@ $ DEBUG_SATORI_SDK=true go run <your_app.go>
 [debg] 2017/04/18 15:28:39.7247 Auth: Got nonce. Trying to authenticate
 [debg] 2017/04/18 15:28:39.7247 send> {"action":"auth/authenticate","body":{"method":"role_secret","credentials":{"hash":"<generated_hash>"}},"id":2}
 [debg] 2017/04/18 15:28:39.8958 recv< {"action":"auth/authenticate/ok","body":{},"id":2}
-[info] 2017/04/18 15:28:39.8959 Auth: Succesfully authenticated
+[info] 2017/04/18 15:28:39.8959 Auth: Successfully authenticated
 [info] 2017/04/18 15:28:39.8959 Client: Enter Connected
 [debg] 2017/04/18 15:28:39.8960 send> {"action":"rtm/write","body":{"channel":"channel-name","message":1},"id":3}
 [debg] 2017/04/18 15:28:40.0750 recv< {"action":"rtm/write/ok","body":{"position":"1492522119:0"},"id":3}

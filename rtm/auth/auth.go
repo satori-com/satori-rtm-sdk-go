@@ -87,7 +87,7 @@ func (auth *Auth) Authenticate(conn *connection.Connection) error {
 	if pdu.GetResponseCode(authenticated) != pdu.CODE_OK_REQUEST {
 		return pdu.GetResponseError(authenticated)
 	}
-	logger.Info("Auth: Succesfully authenticated")
+	logger.Info("Auth: Successfully authenticated")
 
 	return nil
 }
