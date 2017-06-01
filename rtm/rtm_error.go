@@ -14,5 +14,8 @@ type RTMError struct {
 }
 
 func (re RTMError) Error() string {
-	return re.Reason.Error()
+	if re.Reason != nil {
+		return re.Reason.Error()
+	}
+	return "Unknow error"
 }
