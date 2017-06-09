@@ -567,46 +567,46 @@ func (rtm *RTM) Subscribe(subscriptionId string, mode subscription.Mode, opts pd
 		Opts:           opts,
 		Listener:       listener,
 	})
-	err := rtm.processSubscription(sub, true)
-	return err
-}
-
-func (rtm *RTM) processSubscription(sub *subscription.Subscription, storeOnFail bool) error {
-	var subscriptionId = sub.GetSubscriptionId()
-
 	if rtm.fsm.CurrentState() == STATE_CONNECTED {
-		subPdu := sub.SubscribePdu()
-		c, err := rtm.socketSend(subPdu.Action, &subPdu.Body, ACK)
-		if err != nil {
-			return err
-		}
-
-		go func() {
-			data := <-c
-
-			if pdu.GetResponseCode(data) == pdu.CODE_OK_REQUEST {
-				var response pdu.SubscribeOk
-
-				rtm.subscriptions.mutex.Lock()
-				defer rtm.subscriptions.mutex.Unlock()
-				rtm.subscriptions.list[subscriptionId] = sub
-
-				json.Unmarshal(data.Body, &response)
-				sub.ProcessSubscribe(response)
-			} else if pdu.GetResponseCode(data) == pdu.CODE_ERROR_REQUEST {
-				var response pdu.SubscribeError
-				json.Unmarshal(data.Body, &response)
-
-				sub.ProcessSubscribeError(response)
-			}
-
-		}()
-
-	} else if storeOnFail {
+		err := rtm.processSubscription(sub)
+		return err
+	} else {
 		rtm.subscriptions.mutex.Lock()
 		defer rtm.subscriptions.mutex.Unlock()
 		rtm.subscriptions.list[subscriptionId] = sub
 	}
+
+	return nil
+}
+
+func (rtm *RTM) processSubscription(sub *subscription.Subscription) error {
+	var subscriptionId = sub.GetSubscriptionId()
+
+	subPdu := sub.SubscribePdu()
+	c, err := rtm.socketSend(subPdu.Action, &subPdu.Body, ACK)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		data := <-c
+
+		if pdu.GetResponseCode(data) == pdu.CODE_OK_REQUEST {
+			var response pdu.SubscribeOk
+
+			rtm.subscriptions.mutex.Lock()
+			defer rtm.subscriptions.mutex.Unlock()
+			rtm.subscriptions.list[subscriptionId] = sub
+
+			json.Unmarshal(data.Body, &response)
+			sub.ProcessSubscribe(response)
+		} else if pdu.GetResponseCode(data) == pdu.CODE_ERROR_REQUEST {
+			var response pdu.SubscribeError
+			json.Unmarshal(data.Body, &response)
+
+			sub.ProcessSubscribeError(response)
+		}
+	}()
 
 	return nil
 }
@@ -617,7 +617,7 @@ func (rtm *RTM) subscribeAll() error {
 		defer rtm.subscriptions.mutex.Unlock()
 
 		for _, sub := range rtm.subscriptions.list {
-			rtm.processSubscription(sub, false)
+			rtm.processSubscription(sub)
 		}
 		return nil
 	}
