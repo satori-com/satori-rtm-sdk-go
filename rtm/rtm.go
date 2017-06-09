@@ -567,11 +567,11 @@ func (rtm *RTM) Subscribe(subscriptionId string, mode subscription.Mode, opts pd
 		Opts:           opts,
 		Listener:       listener,
 	})
-	err := rtm.processSubscription(sub, false)
+	err := rtm.processSubscription(sub, true)
 	return err
 }
 
-func (rtm *RTM) processSubscription(sub *subscription.Subscription, processAll bool) error {
+func (rtm *RTM) processSubscription(sub *subscription.Subscription, storeOnFail bool) error {
 	var subscriptionId = sub.GetSubscriptionId()
 
 	if rtm.fsm.CurrentState() == STATE_CONNECTED {
@@ -602,7 +602,7 @@ func (rtm *RTM) processSubscription(sub *subscription.Subscription, processAll b
 
 		}()
 
-	} else if !processAll {
+	} else if storeOnFail {
 		rtm.subscriptions.mutex.Lock()
 		defer rtm.subscriptions.mutex.Unlock()
 		rtm.subscriptions.list[subscriptionId] = sub
@@ -617,7 +617,7 @@ func (rtm *RTM) subscribeAll() error {
 		defer rtm.subscriptions.mutex.Unlock()
 
 		for _, sub := range rtm.subscriptions.list {
-			rtm.processSubscription(sub, true)
+			rtm.processSubscription(sub, false)
 		}
 		return nil
 	}
