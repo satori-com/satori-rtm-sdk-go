@@ -65,7 +65,7 @@ func main() {
 	<-connected
 
 	ack := <-client.PublishAck(CHANNEL, Animal{
-		Who: "zebra",
+		Who:   "zebra",
 		Where: [2]float32{34.134358, -118.321506},
 	})
 
