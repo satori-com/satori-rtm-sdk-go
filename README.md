@@ -86,11 +86,29 @@ You must use [DevPortal](https://developer.satori.com/) to create role and set c
 After setting up `credentials.json`, run SDK tests with the following commands:
 ```
 $ go get github.com/satori-com/satori-sdk-go/rtm
-$ CREDENTIALS=/full/path/to/credentials.json go test ./src/github.com/satori-com/satori-sdk-go/...
+$ CREDENTIALS=/full/path/to/credentials.json go test ./src/github.com/satori-com/satori-rtm-sdk-go/...
 ```
+
+### Coverage report
 
 Use the `-cover` flag to get Coverage report. The `-coverprofile` flag produces debug profile file that
 allows to analyse untested parts of SDK.
+
+```
+$ CREDENTIALS=/full/path/to/credentials.json go test ./src/github.com/satori-com/satori-rtm-sdk-go/rtm -cover -coverprofile cover.out
+$ go tool cover -html=cover.out -o rtm.html
+```
+
+Now you can open the `rtm.html` file to check uncovered parts of code.
+
+### Race conditions detection
+
+Use the `-race` flag to enable [Race conditions detection](https://golang.org/doc/articles/race_detector.html). It is highly recommended to use this flag
+when running the tests.
+
+```
+$ CREDENTIALS=/full/path/to/credentials.json go test ./src/github.com/satori-com/satori-rtm-sdk-go/... -race
+```
 
 [GoDoc]: https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm
 [GoDoc Widget]: https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm?status.svg

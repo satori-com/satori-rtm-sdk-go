@@ -2,6 +2,7 @@ package observer
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 )
@@ -84,24 +85,28 @@ func TestDataTransfer(t *testing.T) {
 }
 
 func TestObserverQueue(t *testing.T) {
+	var wg sync.WaitGroup
 	a := A{
 		Observer: New(),
 	}
 
 	result := make([]string, 0)
 
+	wg.Add(2)
 	a.On("test", func(data interface{}) {
 		result = append(result, data.(string))
+		wg.Done()
 	})
 	a.On("test", func(data interface{}) {
 		result = append(result, data.(string))
+		wg.Done()
 	})
 	a.Fire("test", "hello")
 	a.On("test", func(data interface{}) {
 		result = append(result, data.(string))
 	})
 
-	<-time.After(100 * time.Millisecond)
+	wg.Wait()
 	if !reflect.DeepEqual(result, []string{"hello", "hello"}) {
 		t.Fatal("Wrong events order")
 	}
