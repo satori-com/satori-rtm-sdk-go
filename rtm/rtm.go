@@ -595,8 +595,8 @@ func (rtm *RTM) processSubscription(sub *subscription.Subscription) error {
 			var response pdu.SubscribeOk
 
 			rtm.subscriptions.mutex.Lock()
-			defer rtm.subscriptions.mutex.Unlock()
 			rtm.subscriptions.list[subscriptionId] = sub
+			rtm.subscriptions.mutex.Unlock()
 
 			json.Unmarshal(data.Body, &response)
 			sub.ProcessSubscribe(response)
