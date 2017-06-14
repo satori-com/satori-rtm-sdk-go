@@ -66,16 +66,15 @@ func main() {
 	// https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm#hdr-SUBSCRIPTIONS
 	listener := subscription.Listener{
 		// In this callback we will process all incoming messages
+		// Be aware: All callbacks MUST NOT block the thread. You should use go-routines in cases if you need
+		// to wait for some data/events/etc or make complexity calculation
 		OnData: func(data pdu.SubscriptionData) {
 			for _, message := range data.Messages {
 				data_c <- string(message)
 			}
 		},
 
-		// Called when the subscription is established. Once we subscribed we create 2 demo animals that
-		// will randomly move.
-		// Be aware: All callbacks MUST NOT block the main thread. You should use go-routines in cases if you need
-		// to wait for some data/events/etc.
+		// Called when the subscription is established.
 		OnSubscribed: func(pdu.SubscribeOk) {
 			fmt.Println("Successfully subscribed. Waiting for new messages in the '" + CHANNEL + "' channel")
 			fmt.Println("Press CTRL + C to exit")
