@@ -79,14 +79,17 @@ func main() {
 	// Before start the client you can specify additional callbacks to be able to react on events.
 	// The full events list is specified here: https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm#hdr-EVENTS
 	//
-	// Let's use only three of them: OnConnected, OnError and OnStop
-	client.OnConnectedOnce(func() {
+	// Let's use only 4 of them: OnConnected, OnLeaveConnected, OnError and OnStop
+	client.OnConnected(func() {
 		fmt.Println("Connected to RTM!")
+	})
+	client.OnLeaveConnected(func() {
+		fmt.Println("Disconnected")
 	})
 	client.OnError(func(err rtm.RTMError) {
 		fmt.Println(err.Reason)
 	})
-	client.OnStop(func() {
+	client.OnStopOnce(func() {
 		fmt.Println("Gracefully shutdown a program")
 		os.Exit(0)
 	})
@@ -155,8 +158,8 @@ func main() {
 	// If client is not connected then skip publishing.
 	for {
 		if client.IsConnected() {
-			lat := 34.134358 + rand.Float32() / 100
-			long := -118.321506 + rand.Float32() / 100
+			lat := 34.134358 + rand.Float32()/100
+			long := -118.321506 + rand.Float32()/100
 
 			animal := Animal{
 				Who:   "zebra",
@@ -167,7 +170,7 @@ func main() {
 				// Publish is confirmed by Satori RTM.
 				fmt.Printf("Animal is published: %+v\n", animal)
 			} else {
-				fmt.Println("Publish request failed: " + response.Err.Error());
+				fmt.Println("Publish request failed: " + response.Err.Error())
 			}
 
 		}
