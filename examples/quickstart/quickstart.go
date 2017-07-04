@@ -61,6 +61,14 @@ func main() {
 		}
 	}
 
+	fmt.Println("RTM client config:")
+	fmt.Println("	endpoint =", ENDPOINT)
+	fmt.Println("	appkey =", APP_KEY)
+	fmt.Println("	authenticate? =", options.AuthProvider != nil)
+	if options.AuthProvider != nil {
+		fmt.Printf("	  (as \"%s\")\n", ROLE)
+	}
+
 	client, err := rtm.New(ENDPOINT, APP_KEY, options)
 	if err != nil {
 		fmt.Println(err)
@@ -83,9 +91,6 @@ func main() {
 		os.Exit(0)
 	})
 
-	// For synchronisation reason we will use typed channel (type Animal) to be able to collect all incoming messages
-	data_c := make(chan Animal)
-
 	// We create a subscription listener in order to receive callbacks
 	// for incoming data, state changes and errors.
 	//
@@ -102,21 +107,18 @@ func main() {
 				// We assume, that the message in the channel has an Animal struct.
 				err := json.Unmarshal(message, &animal)
 				if err == nil {
-					data_c <- animal
+					fmt.Printf("Animal is received: %+v\n", animal)
 				} else {
 					// We failed to convert message to the Animal struct.
 					// Let's just print the message
-					fmt.Println("Whoops! Not an animal: ", string(message))
+					fmt.Println("Whoops! Not an animal:", string(message))
 				}
 			}
 		},
 
-		// Called when the subscription is established. Once we subscribed we create 2 demo animals that
-		// will randomly move.
+		// Called when the subscription is established.
 		OnSubscribed: func(pdu.SubscribeOk) {
-			// We have a function that will create an animal in a separate go-routine and will randomly change coords
-			go createAnimal(client, "zebra", 34.134358, -118.321506, 300*time.Millisecond)
-			go createAnimal(client, "giraffe", 34.22123, -118.336543, 1*time.Second)
+			fmt.Println("Subscribed to the channel:", CHANNEL)
 		},
 
 		// Called when failed to subscribe
@@ -149,31 +151,26 @@ func main() {
 	fmt.Println("Press CTRL-C to exit")
 	fmt.Println("====================")
 
-	// Now we have a subscription that will forward all incoming messages to our go-channel.
-	for animal := range data_c {
-		fmt.Printf("%+v\n", animal)
-	}
-}
-
-func createAnimal(client *rtm.RTM, who string, lat, long float32, sleep time.Duration) {
+	// At this point, the client may not yet be connected to Satori RTM.
+	// If client is not connected then skip publishing.
 	for {
-		response := <-client.PublishAck(CHANNEL, Animal{
-			Who:   who,
-			Where: [2]float32{lat, long}},
-		)
+		if client.IsConnected() {
+			lat := 34.134358 + rand.Float32() / 100
+			long := -118.321506 + rand.Float32() / 100
 
-		// Process possible publish error. You can get error response, when, for example, you use role that
-		// has no access to publish to specified channel.
-		if response.Err != nil {
-			fmt.Printf("Unable to publish message to the '%s' channel\n", CHANNEL)
-			fmt.Println(response.Err.Error())
-		}
+			animal := Animal{
+				Who:   "zebra",
+				Where: [2]float32{lat, long},
+			}
+			response := <-client.PublishAck(CHANNEL, animal)
+			if response.Err == nil {
+				// Publish is confirmed by Satori RTM.
+				fmt.Printf("Animal is published: %+v\n", animal)
+			} else {
+				fmt.Println("Publish request failed: " + response.Err.Error());
+			}
 
-		move := func(in float32) float32 {
-			return in + float32(rand.Intn(100)-50)/100000
 		}
-		lat = move(lat)
-		long = move(long)
-		time.Sleep(sleep)
+		time.Sleep(2 * time.Second)
 	}
 }
