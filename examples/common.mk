@@ -7,3 +7,5 @@ ifndef GO
 endif
 
 	GOPATH=${GOPATH} go get -v github.com/satori-com/satori-rtm-sdk-go/rtm
+
+	@echo "Use 'make run' to run the application"
