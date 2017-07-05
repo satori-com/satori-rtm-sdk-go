@@ -81,7 +81,7 @@ func main() {
 	//
 	// Let's use only 4 of them: OnConnected, OnLeaveConnected, OnError and OnStop
 	client.OnConnected(func() {
-		fmt.Println("Connected to RTM!")
+		fmt.Println("Connected to Satori RTM!")
 	})
 	client.OnLeaveConnected(func() {
 		fmt.Println("Disconnected")

@@ -1,3 +1,5 @@
+// The example below shows how to publish a message with an acknowledgement to a channel and handle
+// a publish response from the RTM service. In this example, an animal is published to the “animals” channel.
 package main
 
 import (
