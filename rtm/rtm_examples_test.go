@@ -14,7 +14,7 @@ import (
 )
 
 func ExampleRTM_Publish() {
-	type Point struct {
+	type Animal struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -23,16 +23,16 @@ func ExampleRTM_Publish() {
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
-	client.Start()
-
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+	client.Start()
+
 	<-connected
 
-	client.Publish("<your-channel>", Point{
+	client.Publish("<your-channel>", Animal{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -44,13 +44,14 @@ func ExampleRTM_Publish_types() {
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
-	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+	client.Start()
+
 	<-connected
 
 	var i int = 42
@@ -76,7 +77,7 @@ func ExampleRTM_Publish_types() {
 }
 
 func ExampleRTM_PublishAck_simple() {
-	type Point struct {
+	type Animal struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -85,16 +86,18 @@ func ExampleRTM_PublishAck_simple() {
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
-	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
-	response := <-client.PublishAck("<your-channel>", Point{
+	response := <-client.PublishAck("<your-channel>", Animal{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -102,7 +105,7 @@ func ExampleRTM_PublishAck_simple() {
 }
 
 func ExampleRTM_PublishAck_processErrors() {
-	type Point struct {
+	type Animal struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -118,16 +121,18 @@ func ExampleRTM_PublishAck_processErrors() {
 	client.OnError(func(err rtm.RTMError) {
 		logger.Error(err.Reason)
 	})
-	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
-	c := <-client.PublishAck("<your-channel>", Point{
+	c := <-client.PublishAck("<your-channel>", Animal{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -143,13 +148,15 @@ func ExampleRTM_Search() {
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
-	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
 	// Make some channels to be able to find them
@@ -167,7 +174,7 @@ func ExampleRTM_Search() {
 }
 
 func ExampleRTM_Write_simple() {
-	type Point struct {
+	type Animal struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -176,23 +183,25 @@ func ExampleRTM_Write_simple() {
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
-	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
-	client.Write("<your-channel>", Point{
+	client.Write("<your-channel>", Animal{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
 }
 
 func ExampleRTM_Write_processErrors() {
-	type Point struct {
+	type Animal struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -209,16 +218,17 @@ func ExampleRTM_Write_processErrors() {
 		logger.Error(err.Reason)
 	})
 
-	client.Start()
-
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
-	w := <-client.Write("<your-channel>", Point{
+	w := <-client.Write("<your-channel>", Animal{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -231,7 +241,7 @@ func ExampleRTM_Write_processErrors() {
 }
 
 func ExampleRTM_Read_simple() {
-	type Point struct {
+	type Animal struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -240,17 +250,19 @@ func ExampleRTM_Read_simple() {
 	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
 		AuthProvider: authProvider,
 	})
-	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
 	// Write message and wait for Ack to be sure that the message is there
-	<-client.Write("<your-channel>", Point{
+	<-client.Write("<your-channel>", Animal{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -260,7 +272,7 @@ func ExampleRTM_Read_simple() {
 }
 
 func ExampleRTM_Read_processErrors() {
-	type Point struct {
+	type Animal struct {
 		Who   string    `json:"who"`
 		Where []float32 `json:"where"`
 	}
@@ -276,17 +288,18 @@ func ExampleRTM_Read_processErrors() {
 	client.OnError(func(err rtm.RTMError) {
 		logger.Error(err.Reason)
 	})
-	client.Start()
-
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
 	// Write message and wait for Ack to be sure that the message is there
-	w := <-client.Write("<your-channel>", Point{
+	w := <-client.Write("<your-channel>", Animal{
 		Who:   "zebra",
 		Where: []float32{34.134358, -118.321506},
 	})
@@ -330,14 +343,14 @@ func ExampleRTM_Subscribe() {
 		},
 		listener,
 	)
-
-	client.Start()
-
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
 	// Send random messages to the channel
@@ -400,13 +413,15 @@ func ExampleRTM_Subscribe_processErrors() {
 		},
 		listener,
 	)
-	client.Start()
 
 	// Wait for client is connected
 	connected := make(chan bool)
 	client.OnConnectedOnce(func() {
 		connected <- true
 	})
+
+	client.Start()
+
 	<-connected
 
 	// Send random messages to the channel
