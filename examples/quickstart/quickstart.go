@@ -34,7 +34,7 @@ const (
 	ENDPOINT = "YOUR_ENDPOINT"
 	APP_KEY  = "YOUR_APPKEY"
 
-	// Role and Secret are optional. Leaving these variables as is means no authentication.
+	// Role and secret are optional. Leaving these variables as is means no authentication.
 	ROLE            = "YOUR_ROLE"
 	ROLE_SECRET_KEY = "YOUR_SECRET"
 
@@ -107,26 +107,30 @@ func main() {
 			for _, message := range data.Messages {
 				var animal Animal
 
-				// We assume, that the message in the channel has an Animal struct.
+				// Try to unmarshal message to Animal struct
 				err := json.Unmarshal(message, &animal)
 				if err == nil {
-					fmt.Printf("Animal is received: %+v\n", animal)
+					fmt.Printf("Got animal %s: %+v\n", animal.Who, animal.Where)
 				} else {
-					// We failed to convert message to the Animal struct.
-					// Let's just print the message
-					fmt.Println("Whoops! Not an animal:", string(message))
+					// We failed to convert the message to the Animal struct.
+					fmt.Println("Failed to parse the incoming message:", string(message))
 				}
 			}
 		},
 
 		// Called when the subscription is established.
-		OnSubscribed: func(pdu.SubscribeOk) {
-			fmt.Println("Subscribed to the channel:", CHANNEL)
+		OnSubscribed: func(sok pdu.SubscribeOk) {
+			fmt.Println("Subscribed to the channel:", sok.SubscriptionId)
 		},
 
 		// Called when failed to subscribe
 		OnSubscribeError: func(err pdu.SubscribeError) {
 			fmt.Println("Failed to subscribe:", err.Error, err.Reason)
+		},
+
+		// Called when getting the unsolicited error
+		OnSubscriptionError: func(err pdu.SubscriptionError) {
+			fmt.Printf("Subscription failed. RTM sent the unsolicited error %s: %s\n", err.Error, err.Reason)
 		},
 	}
 
@@ -159,11 +163,11 @@ func main() {
 	for {
 		if client.IsConnected() {
 			lat := 34.134358 + rand.Float32()/100
-			long := -118.321506 + rand.Float32()/100
+			lon := -118.321506 + rand.Float32()/100
 
 			animal := Animal{
 				Who:   "zebra",
-				Where: [2]float32{lat, long},
+				Where: [2]float32{lat, lon},
 			}
 			response := <-client.PublishAck(CHANNEL, animal)
 			if response.Err == nil {
