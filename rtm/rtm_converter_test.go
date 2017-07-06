@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var rtm = &RTM{}
+var rtm = &RTMClient{}
 
 func TestRTM_ConvertToRawJson_String(t *testing.T) {
 	actual := rtm.ConvertToRawJson("test")
