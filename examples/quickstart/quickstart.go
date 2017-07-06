@@ -79,7 +79,7 @@ func main() {
 	// Before start the client you can specify additional callbacks to be able to react on events.
 	// The full events list is specified here: https://godoc.org/github.com/satori-com/satori-rtm-sdk-go/rtm#hdr-EVENTS
 	//
-	// Let's use only 4 of them: OnConnected, OnLeaveConnected, OnError and OnStop
+	// Let's use only 4 of them: OnConnected, OnLeaveConnected, OnError and OnStoppedOnce
 	client.OnConnected(func() {
 		fmt.Println("Connected to Satori RTM!")
 	})
@@ -89,7 +89,7 @@ func main() {
 	client.OnError(func(err rtm.RTMError) {
 		fmt.Println(err.Reason)
 	})
-	client.OnStopOnce(func() {
+	client.OnStoppedOnce(func() {
 		fmt.Println("Gracefully shutdown a program")
 		os.Exit(0)
 	})
