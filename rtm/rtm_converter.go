@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func (rtm *RTM) ConvertToRawJson(message interface{}) json.RawMessage {
+func (rtm *RTMClient) ConvertToRawJson(message interface{}) json.RawMessage {
 	switch message.(type) {
 	case string:
 		encoded, _ := json.Marshal(message.(string))

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (rtm *RTM) initFSM() {
+func (rtm *RTMClient) initFSM() {
 	rtm.fsm, _ = fsm.New(STATE_STOPPED, fsm.States{
 		STATE_STOPPED: fsm.Events{
 			EVENT_STOPPED: func(f *fsm.FSM) {
@@ -102,7 +102,7 @@ func (rtm *RTM) initFSM() {
 	}
 }
 
-func (rtm *RTM) nextReconnectInterval() time.Duration {
+func (rtm *RTMClient) nextReconnectInterval() time.Duration {
 	reconnect_sec := rtm.reconnectCount * rtm.reconnectCount
 	if reconnect_sec > MAX_RECONNECT_TIME_SEC {
 		reconnect_sec = MAX_RECONNECT_TIME_SEC

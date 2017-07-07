@@ -203,7 +203,7 @@ var (
 	ERROR_NOT_CONNECTED          = errors.New("Not connected")
 )
 
-type RTM struct {
+type RTMClient struct {
 	endpoint string
 	appKey   string
 	opts     Options
@@ -222,7 +222,7 @@ type RTM struct {
 // "endpoint" and "appkey" are mandatory fields and cannot be empty.
 //
 // You should run Start() after creating a new instance to establish connection to RTM
-func New(endpoint, appkey string, opts Options) (*RTM, error) {
+func New(endpoint, appkey string, opts Options) (*RTMClient, error) {
 	logger.Info("Creating new RTM object")
 
 	if len(endpoint) == 0 {
@@ -239,7 +239,7 @@ func New(endpoint, appkey string, opts Options) (*RTM, error) {
 		}
 	}
 
-	rtm := &RTM{
+	rtm := &RTMClient{
 		Observer: observer.New(),
 
 		appKey:   appkey,
@@ -257,7 +257,7 @@ func New(endpoint, appkey string, opts Options) (*RTM, error) {
 
 // Returns a subsciption. Subscription struct for the associated subscription id.
 // The Subscription object must exist. Otherwise function returns ERROR_SUBSCRIPTION_NOT_FOUND error
-func (rtm *RTM) GetSubscription(subscriptionId string) (*subscription.Subscription, error) {
+func (rtm *RTMClient) GetSubscription(subscriptionId string) (*subscription.Subscription, error) {
 	rtm.subscriptions.mutex.Lock()
 	defer rtm.subscriptions.mutex.Unlock()
 	if sub, ok := rtm.subscriptions.list[subscriptionId]; ok {
@@ -267,7 +267,7 @@ func (rtm *RTM) GetSubscription(subscriptionId string) (*subscription.Subscripti
 }
 
 // Publishes a message to a channel.
-func (rtm *RTM) Publish(channel string, message interface{}) error {
+func (rtm *RTMClient) Publish(channel string, message interface{}) error {
 	_, err := rtm.socketSend("rtm/publish", &pdu.PublishBody{
 		Channel: channel,
 		Message: rtm.ConvertToRawJson(message),
@@ -277,7 +277,7 @@ func (rtm *RTM) Publish(channel string, message interface{}) error {
 
 // Publishes a message to a channel with Acknowledge. The RTM client must be connected.
 // Returns the channel that will receive the message when RTM confirms message delivery or error occurred
-func (rtm *RTM) PublishAck(channel string, message interface{}) <-chan PublishResponse {
+func (rtm *RTMClient) PublishAck(channel string, message interface{}) <-chan PublishResponse {
 	var err error
 	retCh := make(chan PublishResponse, 1)
 
@@ -320,7 +320,7 @@ func (rtm *RTM) PublishAck(channel string, message interface{}) <-chan PublishRe
 
 // Writes a value to the specified channel. The RTM client must be connected.
 // Returns the channel that will receive the message when RTM confirms message delivery or error occurred
-func (rtm *RTM) Write(channel string, message interface{}) <-chan WriteResponse {
+func (rtm *RTMClient) Write(channel string, message interface{}) <-chan WriteResponse {
 	var err error
 	retCh := make(chan WriteResponse, 1)
 
@@ -365,7 +365,7 @@ func (rtm *RTM) Write(channel string, message interface{}) <-chan WriteResponse 
 
 // Deletes the value for the associated channel. The RTM client must be connected.
 // Returns the channel that will receive the message when RTM confirms message delivery or error occurred
-func (rtm *RTM) Delete(channel string) <-chan DeleteResponse {
+func (rtm *RTMClient) Delete(channel string) <-chan DeleteResponse {
 	var err error
 	retCh := make(chan DeleteResponse, 1)
 
@@ -408,13 +408,13 @@ func (rtm *RTM) Delete(channel string) <-chan DeleteResponse {
 
 // Reads the latest message written to a specific channel. The RTM client must be connected.
 // Returns the channel that will receive the message when RTM responds or error occurred
-func (rtm *RTM) Read(channel string) <-chan ReadResponse {
+func (rtm *RTMClient) Read(channel string) <-chan ReadResponse {
 	return rtm.ReadPos(channel, "")
 }
 
 // Reads the message with the specified position written to a specific channel. The RTM client must be connected.
 // Returns the channel that will receive the message when RTM responds or error occurred
-func (rtm *RTM) ReadPos(channel string, position string) <-chan ReadResponse {
+func (rtm *RTMClient) ReadPos(channel string, position string) <-chan ReadResponse {
 	var err error
 	retCh := make(chan ReadResponse, 1)
 
@@ -462,7 +462,7 @@ func (rtm *RTM) ReadPos(channel string, position string) <-chan ReadResponse {
 //
 // Go channel contains channel names returned by RTM. Channel will be closed after reading the last message.
 // Returns the channel that will receive the messages with channel names when RTM responds or error occurred
-func (rtm *RTM) Search(prefix string) <-chan SearchResponse {
+func (rtm *RTMClient) Search(prefix string) <-chan SearchResponse {
 	var err error
 	retCh := make(chan SearchResponse)
 
@@ -517,7 +517,7 @@ func (rtm *RTM) Search(prefix string) <-chan SearchResponse {
 }
 
 // Checks if the client is connected
-func (rtm *RTM) IsConnected() bool {
+func (rtm *RTMClient) IsConnected() bool {
 	if rtm.fsm.CurrentState() == STATE_CONNECTED {
 		return true
 	}
@@ -560,7 +560,7 @@ func (rtm *RTM) IsConnected() bool {
 // Listener instance to define application functionality based on subscription state changes or subscription events.
 // For example, you can define callback for when a channel receives a message, when the application
 // subscribes or unsubscribes to a channel, or gets the errors.
-func (rtm *RTM) Subscribe(subscriptionId string, mode subscription.Mode, opts pdu.SubscribeBodyOpts, listener subscription.Listener) error {
+func (rtm *RTMClient) Subscribe(subscriptionId string, mode subscription.Mode, opts pdu.SubscribeBodyOpts, listener subscription.Listener) error {
 	sub := subscription.New(subscription.Config{
 		SubscriptionId: subscriptionId,
 		Mode:           mode,
@@ -579,7 +579,7 @@ func (rtm *RTM) Subscribe(subscriptionId string, mode subscription.Mode, opts pd
 	return nil
 }
 
-func (rtm *RTM) processSubscription(sub *subscription.Subscription) error {
+func (rtm *RTMClient) processSubscription(sub *subscription.Subscription) error {
 	var subscriptionId = sub.GetSubscriptionId()
 
 	subPdu := sub.SubscribePdu()
@@ -611,7 +611,7 @@ func (rtm *RTM) processSubscription(sub *subscription.Subscription) error {
 	return nil
 }
 
-func (rtm *RTM) subscribeAll() error {
+func (rtm *RTMClient) subscribeAll() error {
 	if rtm.fsm.CurrentState() == STATE_CONNECTED {
 		rtm.subscriptions.mutex.Lock()
 		defer rtm.subscriptions.mutex.Unlock()
@@ -625,7 +625,7 @@ func (rtm *RTM) subscribeAll() error {
 	return ERROR_NOT_CONNECTED
 }
 
-func (rtm *RTM) disconnectAll() {
+func (rtm *RTMClient) disconnectAll() {
 	for _, sub := range rtm.subscriptions.list {
 		sub.ProcessDisconnect()
 	}
@@ -633,7 +633,7 @@ func (rtm *RTM) disconnectAll() {
 
 // Removes the specified subscription. The RTM client must be connected.
 // Returns the channel that will receive the message when RTM confirms unsubscribing or error occurred
-func (rtm *RTM) Unsubscribe(subscriptionId string) <-chan UnsunscribeResponse {
+func (rtm *RTMClient) Unsubscribe(subscriptionId string) <-chan UnsunscribeResponse {
 	retCh := make(chan UnsunscribeResponse, 1)
 
 	rtm.subscriptions.mutex.Lock()
@@ -696,7 +696,7 @@ func (rtm *RTM) Unsubscribe(subscriptionId string) <-chan UnsunscribeResponse {
 	return retCh
 }
 
-func (rtm *RTM) handleMessage(message pdu.RTMQuery) error {
+func (rtm *RTMClient) handleMessage(message pdu.RTMQuery) error {
 	act := message.Action
 	switch {
 	case act == "rtm/subscription/data":
@@ -748,11 +748,11 @@ func (rtm *RTM) handleMessage(message pdu.RTMQuery) error {
 // You can use Event-Based model to catch application events,
 // for example, when the application enters or leaves the
 // connecting or connected states.
-func (rtm *RTM) Start() {
+func (rtm *RTMClient) Start() {
 	rtm.Fire(EVENT_START, nil)
 }
 
-func (rtm *RTM) connect() error {
+func (rtm *RTMClient) connect() error {
 	var err error
 
 	logger.Info("Connecting to", rtm.endpoint)
@@ -766,7 +766,7 @@ func (rtm *RTM) connect() error {
 	}
 
 	// Subscribe to all messages
-	go func(rtm *RTM) {
+	go func(rtm *RTMClient) {
 		for {
 			message, err := rtm.socketRead()
 			if err != nil {
@@ -809,15 +809,15 @@ func (rtm *RTM) connect() error {
 //
 // You can use Event-Based model to define application functionality,
 // for example, when the application enters or leaves the stopped state.
-func (rtm *RTM) Stop() {
+func (rtm *RTMClient) Stop() {
 	rtm.Fire(EVENT_STOP, nil)
 }
 
-func (rtm *RTM) closeConnection() {
+func (rtm *RTMClient) closeConnection() {
 	rtm.conn.Close()
 }
 
-func (rtm *RTM) socketSend(action string, body interface{}, ack bool) (<-chan pdu.RTMQuery, error) {
+func (rtm *RTMClient) socketSend(action string, body interface{}, ack bool) (<-chan pdu.RTMQuery, error) {
 	if !rtm.IsConnected() {
 		return nil, RTMError{
 			Code:   ERROR_CODE_APPLICATION,
@@ -853,7 +853,7 @@ func (rtm *RTM) socketSend(action string, body interface{}, ack bool) (<-chan pd
 	return ch, nil
 }
 
-func (rtm *RTM) socketRead() (pdu.RTMQuery, error) {
+func (rtm *RTMClient) socketRead() (pdu.RTMQuery, error) {
 	response, err := rtm.conn.Read()
 	if err != nil {
 		rtm.Fire(EVENT_ERROR, RTMError{

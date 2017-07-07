@@ -21,10 +21,10 @@ type credentialsT struct {
 /*
  *	Helper functions
  */
-func getRTM() (*RTM, error) {
+func getRTM() (*RTMClient, error) {
 	credentials, err := getCredentials()
 	if err != nil {
-		return &RTM{}, err
+		return &RTMClient{}, err
 	}
 
 	authProvider := auth.New(credentials.RoleName, credentials.RoleSecretKey)
@@ -34,7 +34,7 @@ func getRTM() (*RTM, error) {
 	return client, nil
 }
 
-func waitForConnected(rtm *RTM) error {
+func waitForConnected(rtm *RTMClient) error {
 	connected := make(chan bool)
 	rtm.On(EVENT_CONNECTED, func(interface{}) {
 		connected <- true
