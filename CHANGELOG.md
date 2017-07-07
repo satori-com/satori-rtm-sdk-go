@@ -1,4 +1,4 @@
-v1.0.1 (???)
+v1.0.1 (2017-07-07)
 -------------------
 * Catch *panic* in user callbacks. Extend subscription listener by "OnPanicRecover" action;
 * Close connection before fire the Stop callback;
@@ -6,8 +6,8 @@ v1.0.1 (???)
 * RTM Client: Fix race condition when subscribing;
 * Fix panic when trying to print "RTM Error" with nil error;
 * Change code for ERROR_CODE_AUTHENTICATION const;
-* Add examples;
-* Rename RTM struct to RTMClient.
+* Rename RTM struct to RTMClient;
+* Add examples.
 
 v0.2.0 (2017-04-28)
 -------------------
