@@ -168,6 +168,15 @@
 //     AuthProvider: authProvider,
 //   })
 //
+//
+// PROXY (SECURE PROXY)
+//
+// RTM Client allows to use proxy to connect to RTM
+//
+//   client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+//     ProxyURL: "https://<addr>:<port>",
+//   })
+//
 package rtm
 
 import (

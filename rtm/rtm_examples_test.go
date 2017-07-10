@@ -466,3 +466,16 @@ func ExampleRTM() {
 		logger.Error(errors.New("Unable to authenticate. Timeout"))
 	}
 }
+
+func ExampleRTM_Proxy() {
+	authProvider := auth.New("<your-role>", "<your-rolekey>")
+	client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+		AuthProvider: authProvider,
+		ProxyURL:     "https://<addr>:<port>",
+	})
+
+	if err != nil {
+		logger.Fatal(err)
+	}
+	client.Start()
+}
