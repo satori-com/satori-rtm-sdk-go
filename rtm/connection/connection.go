@@ -6,9 +6,9 @@ package connection
 
 import (
 	"encoding/json"
+	"github.com/gorilla/websocket"
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
-	"golang.org/x/net/websocket"
 	"math"
 	"strconv"
 	"sync"
@@ -38,10 +38,11 @@ type acksType struct {
 // Establishes Websocket connection to the Service.
 func New(endpoint string) (*Connection, error) {
 	var err error
+	var dialer *websocket.Dialer
 
 	conn := &Connection{}
 	conn.lastID = 0
-	conn.wsConn, err = websocket.Dial(endpoint, "", "http://localhost")
+	conn.wsConn, _, err = dialer.Dial(endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 	}
 
 	logger.Debug("send>", string(message))
-	_, err = c.wsConn.Write(message)
+	err = c.wsConn.WriteMessage(websocket.TextMessage, message)
 
 	if err != nil {
 		c.Close()
@@ -124,8 +125,13 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 func (c *Connection) Read() (pdu.RTMQuery, error) {
 	var response pdu.RTMQuery
 
-	d := json.NewDecoder(c.wsConn)
-	err := d.Decode(&response)
+	_, data, err := c.wsConn.ReadMessage()
+	if err != nil {
+		c.Close()
+		return pdu.RTMQuery{}, err
+	}
+
+	err = json.Unmarshal(data, &response)
 	if err != nil {
 		c.Close()
 		return pdu.RTMQuery{}, err
@@ -140,8 +146,12 @@ func (c *Connection) Read() (pdu.RTMQuery, error) {
 	return response, nil
 }
 
-func (c *Connection) SetDeadline(t time.Time) {
-	c.wsConn.SetDeadline(t)
+func (c *Connection) SetReadDeadline(t time.Time) {
+	c.wsConn.SetReadDeadline(t)
+}
+
+func (c *Connection) SetWriteDeadline(t time.Time) {
+	c.wsConn.SetWriteDeadline(t)
 }
 
 func (c *Connection) nextID() string {

@@ -9,7 +9,7 @@ import (
 
 func TestEmptyEndpoint(t *testing.T) {
 	_, err := New("")
-	if !strings.Contains(err.Error(), "empty url") {
+	if !strings.Contains(err.Error(), "malformed") {
 		t.Fatal("Unprocessed empty endpoint error")
 	}
 }
@@ -87,7 +87,8 @@ func TestBrokenConnection(t *testing.T) {
 	}
 
 	// Brake connection
-	conn.SetDeadline(time.Now())
+	conn.SetReadDeadline(time.Now())
+	conn.SetWriteDeadline(time.Now())
 
 	err = conn.Send("test", json.RawMessage("{}"))
 	if err == nil {
