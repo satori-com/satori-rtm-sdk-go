@@ -87,8 +87,7 @@ func TestBrokenConnection(t *testing.T) {
 	}
 
 	// Brake connection
-	conn.SetReadDeadline(time.Now())
-	conn.SetWriteDeadline(time.Now())
+	conn.Close()
 
 	err = conn.Send("test", json.RawMessage("{}"))
 	if err == nil {

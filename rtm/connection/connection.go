@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
-	"time"
 )
 
 const (
@@ -28,6 +27,11 @@ type Connection struct {
 	lastID int
 	acks   acksType
 	mutex  sync.Mutex
+
+	// http://godoc.org/github.com/gorilla/websocket#hdr-Concurrency
+	// Gorilla websocket package is not thread-safe. So we need to handle it by ourselves
+	rSockMutex sync.Mutex
+	wSockMutex sync.Mutex
 }
 
 type acksType struct {
@@ -119,6 +123,8 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 	}
 
 	logger.Debug("send>", string(message))
+	c.wSockMutex.Lock()
+	defer c.wSockMutex.Unlock()
 	err = c.wsConn.WriteMessage(websocket.TextMessage, message)
 
 	if err != nil {
@@ -133,6 +139,8 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 func (c *Connection) Read() (pdu.RTMQuery, error) {
 	var response pdu.RTMQuery
 
+	c.rSockMutex.Lock()
+	defer c.rSockMutex.Unlock()
 	_, data, err := c.wsConn.ReadMessage()
 	if err != nil {
 		c.Close()
@@ -152,14 +160,6 @@ func (c *Connection) Read() (pdu.RTMQuery, error) {
 	}
 
 	return response, nil
-}
-
-func (c *Connection) SetReadDeadline(t time.Time) {
-	c.wsConn.SetReadDeadline(t)
-}
-
-func (c *Connection) SetWriteDeadline(t time.Time) {
-	c.wsConn.SetWriteDeadline(t)
 }
 
 func (c *Connection) nextID() string {

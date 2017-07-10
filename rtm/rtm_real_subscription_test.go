@@ -317,8 +317,7 @@ func TestSubscriptionAfterDisconnect(t *testing.T) {
 	}
 
 	// Drop connection
-	client.conn.SetReadDeadline(time.Now())
-	client.conn.SetWriteDeadline(time.Now())
+	client.conn.Close()
 	select {
 	case <-subscribed:
 	case <-time.After(5 * time.Second):
