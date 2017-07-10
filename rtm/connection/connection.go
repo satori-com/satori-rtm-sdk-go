@@ -10,6 +10,8 @@ import (
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 	"math"
+	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -34,11 +36,17 @@ type acksType struct {
 	mutex     sync.Mutex
 }
 
+type Options struct {
+	Proxy *url.URL
+}
+
 // Creates a new instance for a specific RTM Service endpoint.
 // Establishes Websocket connection to the Service.
-func New(endpoint string) (*Connection, error) {
+func New(endpoint string, opts Options) (*Connection, error) {
 	var err error
-	var dialer *websocket.Dialer
+	dialer := websocket.Dialer{
+		Proxy: http.ProxyURL(opts.Proxy),
+	}
 
 	conn := &Connection{}
 	conn.lastID = 0

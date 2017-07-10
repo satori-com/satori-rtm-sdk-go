@@ -13,6 +13,7 @@ type Auth interface {
 
 type Options struct {
 	AuthProvider Auth
+	ProxyURL     string
 }
 
 type subscriptionsType struct {
