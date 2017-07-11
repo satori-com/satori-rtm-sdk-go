@@ -13,7 +13,12 @@ type Auth interface {
 
 type Options struct {
 	AuthProvider Auth
-	ProxyURL     string
+	HttpsProxy   Proxy
+}
+
+type Proxy struct {
+	Host string
+	Port int
 }
 
 type subscriptionsType struct {

@@ -190,6 +190,7 @@ import (
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/subscription"
 	"net/url"
 	"regexp"
+	"strconv"
 )
 
 const (
@@ -210,7 +211,6 @@ var (
 	ERROR_UNSUPPORTED_TYPE       = errors.New("Unable to send data. Unsupported type")
 	ERROR_EMPTY_ENDPOINT         = errors.New("Endpoint is empty")
 	ERROR_EMPTY_APP_KEY          = errors.New("App key is empty")
-	ERROR_BAD_PROXY_URL          = errors.New("Bad proxy URL")
 	ERROR_NOT_CONNECTED          = errors.New("Not connected")
 )
 
@@ -768,15 +768,12 @@ func (rtm *RTMClient) connect() error {
 
 	logger.Info("Connecting to", rtm.endpoint)
 	cOpts := connection.Options{}
-	if rtm.opts.ProxyURL != "" {
-		cOpts.Proxy, err = url.Parse(rtm.opts.ProxyURL)
-		if err != nil {
-			return RTMError{
-				Code:   ERROR_CODE_APPLICATION,
-				Reason: ERROR_BAD_PROXY_URL,
-			}
+	if rtm.opts.HttpsProxy.Host != "" {
+		cOpts.ProxyURL = &url.URL{
+			Host:   rtm.opts.HttpsProxy.Host + ":" + strconv.Itoa(rtm.opts.HttpsProxy.Port),
+			Scheme: "https",
 		}
-		logger.Info("via proxy:", rtm.opts.ProxyURL)
+		logger.Info("via proxy:", cOpts.ProxyURL)
 	}
 
 	rtm.conn, err = connection.New(rtm.endpoint+"?appkey="+rtm.appKey, cOpts)

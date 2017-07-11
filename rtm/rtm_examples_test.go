@@ -468,10 +468,11 @@ func ExampleRTM() {
 }
 
 func ExampleRTM_Proxy() {
-	authProvider := auth.New("<your-role>", "<your-rolekey>")
 	client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
-		AuthProvider: authProvider,
-		ProxyURL:     "https://<addr>:<port>",
+		HttpsProxy: rtm.Proxy{
+			Host: "<addr>",
+			Port: 1234,
+		},
 	})
 
 	if err != nil {

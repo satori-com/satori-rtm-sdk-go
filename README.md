@@ -60,6 +60,22 @@ $ DEBUG_SATORI_SDK=true go run <your_app.go>
 [debg] 2017/04/18 15:28:40.0750 recv< {"action":"rtm/write/ok","body":{"position":"1492522119:0"},"id":3}
 ```
 
+
+## Using HTTPS Proxy
+
+The SDK supports working through an https (not http) proxy.
+
+When creating a new client specify `HttpsProxy` in `Options` like this:
+
+```
+client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+    HttpsProxy: rtm.Proxy{
+        Host: "127.0.0.1",
+        Port: 1234,
+    },
+})
+```
+
 ## Tests and Coverage Report
 
 Tests require a valid RTM endpoint; RTM credentials should be populated in `credentials.json`.

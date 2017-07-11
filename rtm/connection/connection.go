@@ -30,7 +30,6 @@ type Connection struct {
 
 	// http://godoc.org/github.com/gorilla/websocket#hdr-Concurrency
 	// Gorilla websocket package is not thread-safe. So we need to handle it by ourselves
-	rSockMutex sync.Mutex
 	wSockMutex sync.Mutex
 }
 
@@ -41,7 +40,7 @@ type acksType struct {
 }
 
 type Options struct {
-	Proxy *url.URL
+	ProxyURL *url.URL
 }
 
 // Creates a new instance for a specific RTM Service endpoint.
@@ -49,7 +48,7 @@ type Options struct {
 func New(endpoint string, opts Options) (*Connection, error) {
 	var err error
 	dialer := websocket.Dialer{
-		Proxy: http.ProxyURL(opts.Proxy),
+		Proxy: http.ProxyURL(opts.ProxyURL),
 	}
 
 	conn := &Connection{}
@@ -123,9 +122,10 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 	}
 
 	logger.Debug("send>", string(message))
+
 	c.wSockMutex.Lock()
-	defer c.wSockMutex.Unlock()
 	err = c.wsConn.WriteMessage(websocket.TextMessage, message)
+	c.wSockMutex.Unlock()
 
 	if err != nil {
 		c.Close()
@@ -139,8 +139,6 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 func (c *Connection) Read() (pdu.RTMQuery, error) {
 	var response pdu.RTMQuery
 
-	c.rSockMutex.Lock()
-	defer c.rSockMutex.Unlock()
 	_, data, err := c.wsConn.ReadMessage()
 	if err != nil {
 		c.Close()
