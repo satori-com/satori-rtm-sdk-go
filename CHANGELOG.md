@@ -1,3 +1,8 @@
+v1.1.0 (???)
+-------------------
+* Add support of HTTPS proxy.
+
+
 v1.0.1 (2017-07-07)
 -------------------
 * Catch *panic* in user callbacks. Extend subscription listener by "OnPanicRecover" action;
