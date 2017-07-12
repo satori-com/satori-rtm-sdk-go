@@ -34,7 +34,7 @@ const (
 	ENDPOINT = "YOUR_ENDPOINT"
 	APP_KEY  = "YOUR_APPKEY"
 
-	// Role and secret are optional. Leaving these variables as is means no authentication.
+	// Role and secret are optional: replace only if you need to authenticate.
 	ROLE            = "YOUR_ROLE"
 	ROLE_SECRET_KEY = "YOUR_SECRET"
 
