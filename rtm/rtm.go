@@ -770,10 +770,9 @@ func (rtm *RTMClient) connect() error {
 	cOpts := connection.Options{}
 	if rtm.opts.HttpsProxy.Host != "" {
 		cOpts.ProxyURL = &url.URL{
-			Host:   rtm.opts.HttpsProxy.Host + ":" + strconv.Itoa(rtm.opts.HttpsProxy.Port),
-			Scheme: "https",
+			Host: rtm.opts.HttpsProxy.Host + ":" + strconv.Itoa(rtm.opts.HttpsProxy.Port),
 		}
-		logger.Info("via proxy:", cOpts.ProxyURL)
+		logger.Info("via proxy:", cOpts.ProxyURL.Host)
 	}
 
 	rtm.conn, err = connection.New(rtm.endpoint+"?appkey="+rtm.appKey, cOpts)
