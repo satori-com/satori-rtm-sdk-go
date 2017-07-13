@@ -40,7 +40,7 @@ type acksType struct {
 }
 
 type Options struct {
-	ProxyURL *url.URL
+	Proxy func(*http.Request) (*url.URL, error)
 }
 
 // Creates a new instance for a specific RTM Service endpoint.
@@ -48,7 +48,7 @@ type Options struct {
 func New(endpoint string, opts Options) (*Connection, error) {
 	var err error
 	dialer := websocket.Dialer{
-		Proxy: http.ProxyURL(opts.ProxyURL),
+		Proxy: opts.Proxy,
 	}
 
 	conn := &Connection{}

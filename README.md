@@ -61,18 +61,24 @@ $ DEBUG_SATORI_SDK=true go run <your_app.go>
 ```
 
 
-## Using HTTPS Proxy
+## Using Proxy
 
-The SDK supports working through an https (not http) proxy.
+The SDK supports working through a proxy.
 
-When creating a new client specify `HttpsProxy` in `Options` like this:
+When creating a new client specify `Proxy` in `Options`. There are several ways how to do this:
 
 ```
+// Use Environment variables to get Proxy URL: https://golang.org/pkg/net/http/#ProxyFromEnvironment
 client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
-    HttpsProxy: rtm.Proxy{
-        Host: "127.0.0.1",
-        Port: 1234,
-    },
+  Proxy: http.ProxyFromEnvironment
+})
+```
+
+```
+// Use *url.URL directly
+proxyUrl, _ := url.Parse("http://127.0.0.1:3128")
+client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+  Proxy: http.ProxyURL(proxyUrl)
 })
 ```
 

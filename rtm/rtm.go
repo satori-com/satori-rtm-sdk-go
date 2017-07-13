@@ -171,10 +171,17 @@
 //
 // PROXY (SECURE PROXY)
 //
-// RTM Client allows to use proxy to connect to RTM
+// RTM Client allows to use proxy to connect to RTM. There are several ways, how to do this:
 //
+//   // Use Environment variables to get Proxy URL: https://golang.org/pkg/net/http/#ProxyFromEnvironment
 //   client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
-//     ProxyURL: "https://<addr>:<port>",
+//     Proxy: http.ProxyFromEnvironment
+//   })
+//
+//   // Use *url.URL directly
+//   proxyUrl, _ := url.Parse("http://123.123.123.123:1234")
+//   client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+//     Proxy: http.ProxyURL(proxyUrl)
 //   })
 //
 package rtm
@@ -188,9 +195,7 @@ import (
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/connection"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/subscription"
-	"net/url"
 	"regexp"
-	"strconv"
 )
 
 const (
@@ -767,15 +772,13 @@ func (rtm *RTMClient) connect() error {
 	var err error
 
 	logger.Info("Connecting to", rtm.endpoint)
-	cOpts := connection.Options{}
-	if rtm.opts.HttpsProxy.Host != "" {
-		cOpts.ProxyURL = &url.URL{
-			Host: rtm.opts.HttpsProxy.Host + ":" + strconv.Itoa(rtm.opts.HttpsProxy.Port),
-		}
-		logger.Info("via proxy:", cOpts.ProxyURL.Host)
+	if rtm.opts.Proxy != nil {
+		logger.Info("   (via proxy)")
 	}
 
-	rtm.conn, err = connection.New(rtm.endpoint+"?appkey="+rtm.appKey, cOpts)
+	rtm.conn, err = connection.New(rtm.endpoint+"?appkey="+rtm.appKey, connection.Options{
+		Proxy: rtm.opts.Proxy,
+	})
 
 	if err != nil {
 		return RTMError{

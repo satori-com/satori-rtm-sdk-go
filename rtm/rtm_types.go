@@ -4,6 +4,8 @@ import (
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/connection"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/subscription"
+	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -13,12 +15,14 @@ type Auth interface {
 
 type Options struct {
 	AuthProvider Auth
-	HttpsProxy   Proxy
-}
 
-type Proxy struct {
-	Host string
-	Port int
+	// Proxy specifies a function to return a proxy for a given
+	// Request. If the function returns a non-nil error, the
+	// request is aborted with the provided error.
+	// If Proxy is nil or returns a nil *URL, no proxy is used.
+	//
+	// Check ProxyFromEnvironment, as an example: https://golang.org/src/net/http/transport.go?s=9778:9835#L250
+	Proxy func(*http.Request) (*url.URL, error)
 }
 
 type subscriptionsType struct {
