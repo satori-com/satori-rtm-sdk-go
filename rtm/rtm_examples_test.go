@@ -10,6 +10,8 @@ import (
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/subscription"
 	"math"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -467,12 +469,21 @@ func ExampleRTM() {
 	}
 }
 
-func ExampleRTM_Proxy() {
+func ExampleRTM_Proxy_fromEnv() {
 	client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
-		HttpsProxy: rtm.Proxy{
-			Host: "<addr>",
-			Port: 1234,
-		},
+		Proxy: http.ProxyFromEnvironment,
+	})
+
+	if err != nil {
+		logger.Fatal(err)
+	}
+	client.Start()
+}
+
+func ExampleRTM_Proxy_fromUrl() {
+	proxyUrl, _ := url.Parse("http://127.0.0.1:3128")
+	client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+		Proxy: http.ProxyURL(proxyUrl),
 	})
 
 	if err != nil {
