@@ -168,6 +168,22 @@
 //     AuthProvider: authProvider,
 //   })
 //
+//
+// PROXY (SECURE PROXY)
+//
+// RTM Client allows to use proxy to connect to RTM. There are several ways, how to do this:
+//
+//   // Use Environment variables to get Proxy URL: https://golang.org/pkg/net/http/#ProxyFromEnvironment
+//   client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+//     Proxy: http.ProxyFromEnvironment
+//   })
+//
+//   // Use *url.URL directly
+//   proxyUrl, _ := url.Parse("http://123.123.123.123:1234")
+//   client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+//     Proxy: http.ProxyURL(proxyUrl)
+//   })
+//
 package rtm
 
 import (
@@ -756,7 +772,13 @@ func (rtm *RTMClient) connect() error {
 	var err error
 
 	logger.Info("Connecting to", rtm.endpoint)
-	rtm.conn, err = connection.New(rtm.endpoint + "?appkey=" + rtm.appKey)
+	if rtm.opts.Proxy != nil {
+		logger.Info("   (via proxy)")
+	}
+
+	rtm.conn, err = connection.New(rtm.endpoint+"?appkey="+rtm.appKey, connection.Options{
+		Proxy: rtm.opts.Proxy,
+	})
 
 	if err != nil {
 		return RTMError{

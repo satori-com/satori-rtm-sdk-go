@@ -84,7 +84,7 @@ func TestClientDisconnect(t *testing.T) {
 	}
 
 	// Drop connection
-	client.conn.SetDeadline(time.Now())
+	client.conn.Close()
 
 	select {
 	case <-event:

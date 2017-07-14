@@ -8,28 +8,28 @@ import (
 )
 
 func TestEmptyEndpoint(t *testing.T) {
-	_, err := New("")
-	if !strings.Contains(err.Error(), "empty url") {
+	_, err := New("", Options{})
+	if !strings.Contains(err.Error(), "malformed") {
 		t.Fatal("Unprocessed empty endpoint error")
 	}
 }
 
 func TestBadSSLSelfSigned(t *testing.T) {
-	_, err := New("wss://self-signed.badssl.com/")
+	_, err := New("wss://self-signed.badssl.com/", Options{})
 	if !strings.Contains(err.Error(), "certificate signed by unknown authority") {
 		t.Fatal("Connected to host with self-signed certificate")
 	}
 }
 
 func TestBadSSLExpired(t *testing.T) {
-	_, err := New("wss://expired.badssl.com/")
+	_, err := New("wss://expired.badssl.com/", Options{})
 	if !strings.Contains(err.Error(), "certificate has expired") {
 		t.Fatal("Connected to host with expired certificate")
 	}
 }
 
 func TestBasicConnection(t *testing.T) {
-	conn, err := New("ws://echo.websocket.org/")
+	conn, err := New("ws://echo.websocket.org/", Options{})
 	if err != nil {
 		t.Fatal("Unable to connect to ws://echo.websocket.org/")
 	}
@@ -42,7 +42,7 @@ func TestListener(t *testing.T) {
 	if err != nil {
 		t.Skip("Unable to find credentials. Skip test")
 	}
-	conn, err := New(cred.Endpoint + "v2?appkey=" + cred.AppKey)
+	conn, err := New(cred.Endpoint+"v2?appkey="+cred.AppKey, Options{})
 	if err != nil {
 		t.Fatal("Unable to connect to " + cred.Endpoint)
 	}
@@ -65,7 +65,7 @@ func TestSocketSend(t *testing.T) {
 	if err != nil {
 		t.Skip("Unable to find credentials. Skip test")
 	}
-	conn, err := New(cred.Endpoint + "v2?appkey=" + cred.AppKey)
+	conn, err := New(cred.Endpoint+"v2?appkey="+cred.AppKey, Options{})
 	if err != nil {
 		t.Fatal("Unable to connect to " + cred.Endpoint)
 	}
@@ -81,13 +81,13 @@ func TestBrokenConnection(t *testing.T) {
 	if err != nil {
 		t.Skip("Unable to find credentials. Skip test")
 	}
-	conn, err := New(cred.Endpoint + "v2?appkey=" + cred.AppKey)
+	conn, err := New(cred.Endpoint+"v2?appkey="+cred.AppKey, Options{})
 	if err != nil {
 		t.Fatal("Unable to connect to " + cred.Endpoint)
 	}
 
 	// Brake connection
-	conn.SetDeadline(time.Now())
+	conn.Close()
 
 	err = conn.Send("test", json.RawMessage("{}"))
 	if err == nil {
@@ -100,7 +100,7 @@ func TestCloseWithListeners(t *testing.T) {
 	if err != nil {
 		t.Skip("Unable to find credentials. Skip test")
 	}
-	conn, err := New(cred.Endpoint + "v2?appkey=" + cred.AppKey)
+	conn, err := New(cred.Endpoint+"v2?appkey="+cred.AppKey, Options{})
 	if err != nil {
 		t.Fatal("Unable to connect to " + cred.Endpoint)
 	}
@@ -127,7 +127,7 @@ func TestMaxNextID(t *testing.T) {
 	if err != nil {
 		t.Skip("Unable to find credentials. Skip test")
 	}
-	conn, err := New(cred.Endpoint + "v2?appkey=" + cred.AppKey)
+	conn, err := New(cred.Endpoint+"v2?appkey="+cred.AppKey, Options{})
 	if err != nil {
 		t.Fatal("Unable to connect to " + cred.Endpoint)
 	}

@@ -60,6 +60,28 @@ $ DEBUG_SATORI_SDK=true go run <your_app.go>
 [debg] 2017/04/18 15:28:40.0750 recv< {"action":"rtm/write/ok","body":{"position":"1492522119:0"},"id":3}
 ```
 
+
+## Using Proxy
+
+The SDK supports working through a proxy.
+
+When creating a new client specify `Proxy` in `Options`. There are several ways how to do this:
+
+```
+// Use Environment variables to get Proxy URL: https://golang.org/pkg/net/http/#ProxyFromEnvironment
+client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+  Proxy: http.ProxyFromEnvironment
+})
+```
+
+```
+// Use *url.URL directly
+proxyUrl, _ := url.Parse("http://127.0.0.1:3128")
+client, err := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
+  Proxy: http.ProxyURL(proxyUrl)
+})
+```
+
 ## Tests and Coverage Report
 
 Tests require a valid RTM endpoint; RTM credentials should be populated in `credentials.json`.

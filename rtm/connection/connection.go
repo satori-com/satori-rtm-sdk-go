@@ -6,13 +6,14 @@ package connection
 
 import (
 	"encoding/json"
+	"github.com/gorilla/websocket"
 	"github.com/satori-com/satori-rtm-sdk-go/logger"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/pdu"
-	"golang.org/x/net/websocket"
 	"math"
+	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
-	"time"
 )
 
 const (
@@ -26,6 +27,10 @@ type Connection struct {
 	lastID int
 	acks   acksType
 	mutex  sync.Mutex
+
+	// http://godoc.org/github.com/gorilla/websocket#hdr-Concurrency
+	// Gorilla websocket package is not thread-safe. So we need to handle it by ourselves
+	wSockMutex sync.Mutex
 }
 
 type acksType struct {
@@ -34,14 +39,21 @@ type acksType struct {
 	mutex     sync.Mutex
 }
 
+type Options struct {
+	Proxy func(*http.Request) (*url.URL, error)
+}
+
 // Creates a new instance for a specific RTM Service endpoint.
 // Establishes Websocket connection to the Service.
-func New(endpoint string) (*Connection, error) {
+func New(endpoint string, opts Options) (*Connection, error) {
 	var err error
+	dialer := websocket.Dialer{
+		Proxy: opts.Proxy,
+	}
 
 	conn := &Connection{}
 	conn.lastID = 0
-	conn.wsConn, err = websocket.Dial(endpoint, "", "http://localhost")
+	conn.wsConn, _, err = dialer.Dial(endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +122,10 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 	}
 
 	logger.Debug("send>", string(message))
-	_, err = c.wsConn.Write(message)
+
+	c.wSockMutex.Lock()
+	err = c.wsConn.WriteMessage(websocket.TextMessage, message)
+	c.wSockMutex.Unlock()
 
 	if err != nil {
 		c.Close()
@@ -124,8 +139,13 @@ func (c *Connection) socketSend(query pdu.RTMQuery) error {
 func (c *Connection) Read() (pdu.RTMQuery, error) {
 	var response pdu.RTMQuery
 
-	d := json.NewDecoder(c.wsConn)
-	err := d.Decode(&response)
+	_, data, err := c.wsConn.ReadMessage()
+	if err != nil {
+		c.Close()
+		return pdu.RTMQuery{}, err
+	}
+
+	err = json.Unmarshal(data, &response)
 	if err != nil {
 		c.Close()
 		return pdu.RTMQuery{}, err
@@ -138,10 +158,6 @@ func (c *Connection) Read() (pdu.RTMQuery, error) {
 	}
 
 	return response, nil
-}
-
-func (c *Connection) SetDeadline(t time.Time) {
-	c.wsConn.SetDeadline(t)
 }
 
 func (c *Connection) nextID() string {
