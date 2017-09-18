@@ -17,8 +17,6 @@ func GetResponseCode(query RTMQuery) int {
 		return CODE_OK_REQUEST
 	case "/error":
 		return CODE_ERROR_REQUEST
-	case "/data":
-		return CODE_DATA_REQUEST
 	default:
 		return CODE_BAD_REQUEST
 	}

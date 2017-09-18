@@ -35,9 +35,6 @@ func TestGetResponseCode(t *testing.T) {
 	query = RTMQuery{
 		Action: "rtm/search/data",
 	}
-	if GetResponseCode(query) != CODE_DATA_REQUEST {
-		t.Error("[CODE_DATA_REQUEST] Response code mismatch")
-	}
 }
 
 func TestGetResponseError(t *testing.T) {

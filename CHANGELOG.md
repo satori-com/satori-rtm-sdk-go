@@ -1,7 +1,7 @@
 v1.1.0 (???)
 -------------------
-* Add support of HTTPS proxy.
-
+* Add support of HTTPS proxy;
+* Get rid of CODE_DATA_REQUEST response code.
 
 v1.0.1 (2017-07-07)
 -------------------

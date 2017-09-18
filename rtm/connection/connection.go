@@ -179,16 +179,10 @@ func (c *Connection) initAcks() {
 			c.acks.mutex.Lock()
 			ch := c.acks.listeners[response.Id]
 			c.acks.mutex.Unlock()
-
-			// Exception for the "search" API: Do not delete listener channel until the last message
-			if response.Action != "rtm/search/data" {
-				c.deleteListener(response.Id)
-			}
+			c.deleteListener(response.Id)
 
 			if ch != nil {
-				if pdu.GetResponseCode(response) != pdu.CODE_DATA_REQUEST {
-					defer close(ch)
-				}
+				defer close(ch)
 				ch <- response
 			}
 		}

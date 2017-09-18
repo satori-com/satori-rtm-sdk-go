@@ -2,7 +2,6 @@ package rtm
 
 import (
 	"encoding/json"
-	"reflect"
 	"strconv"
 	"testing"
 )
@@ -202,46 +201,6 @@ func TestRTM_Delete_Existing(t *testing.T) {
 	c = <-client.Read(channel)
 	if string(c.Response.Message) != "null" {
 		t.Fatal("Wrong reading value after delete")
-	}
-}
-
-func TestRTM_Search(t *testing.T) {
-	t.Skip("Search feature was temporarily disabled by RTM")
-
-	client, err := getRTM()
-	if err != nil {
-		t.Skip("Unable to find credentials. Skip test")
-	}
-	defer client.Stop()
-	go client.Start()
-
-	if err = waitForConnected(client); err != nil {
-		t.Fatal(err)
-	}
-
-	client.Write("prefix", 1)
-	client.Write("prepare", 2)
-	client.Write("promise", 3)
-	<-client.Write("potato", 4)
-
-	c := <-client.Search("pr")
-
-	if c.Err != nil {
-		t.Fatal(c.Err)
-	}
-
-	channels := []string{}
-	for channel := range c.Channels {
-		channels = append(channels, channel)
-	}
-
-	if len(channels) != 3 {
-		t.Fatal("Wrong searched channel count. Expected: 3; Actual:", len(channels))
-	}
-
-	expected := []string{"promise", "prefix", "prepare"}
-	if reflect.DeepEqual(channels, expected) {
-		t.Fatal("Wrong actial found data")
 	}
 }
 
