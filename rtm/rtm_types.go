@@ -50,11 +50,6 @@ type DeleteResponse struct {
 	Err      error
 }
 
-type SearchResponse struct {
-	Channels <-chan string
-	Err      error
-}
-
 type UnsunscribeResponse struct {
 	Response pdu.UnsubscribeBodyResponse
 	Err      error

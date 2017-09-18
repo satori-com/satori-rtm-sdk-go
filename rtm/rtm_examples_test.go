@@ -145,36 +145,6 @@ func ExampleRTM_PublishAck_processErrors() {
 	}
 }
 
-func ExampleRTM_Search() {
-	authProvider := auth.New("<your-role>", "<your-rolekey>")
-	client, _ := rtm.New("<your-endpoint>", "<your-appkey>", rtm.Options{
-		AuthProvider: authProvider,
-	})
-
-	// Wait for client is connected
-	connected := make(chan bool)
-	client.OnConnectedOnce(func() {
-		connected <- true
-	})
-
-	client.Start()
-
-	<-connected
-
-	// Make some channels to be able to find them
-	client.Publish("tetete", "123")
-	client.Publish("test", "123")
-	<-client.PublishAck("t_1", "123")
-	//Wait for the last message callback to be sure that all messages have been sent
-
-	logger.Info("Search 't'")
-	search := <-client.Search("t")
-	for channel := range search.Channels {
-		logger.Info("Found: " + channel)
-	}
-	logger.Info("Search done")
-}
-
 func ExampleRTM_Write_simple() {
 	type Animal struct {
 		Who   string    `json:"who"`

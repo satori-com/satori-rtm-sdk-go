@@ -473,65 +473,6 @@ func (rtm *RTMClient) ReadPos(channel string, position string) <-chan ReadRespon
 	return retCh
 }
 
-// Performs a channel search for a given user-defined prefix. This method passes
-// replies to the go-channel.
-//
-// Go channel contains channel names returned by RTM. Channel will be closed after reading the last message.
-// Returns the channel that will receive the messages with channel names when RTM responds or error occurred
-func (rtm *RTMClient) Search(prefix string) <-chan SearchResponse {
-	var err error
-	retCh := make(chan SearchResponse)
-
-	c, err := rtm.socketSend("rtm/search", &pdu.SearchBody{
-		Prefix: prefix,
-	}, ACK)
-
-	if err != nil {
-		retCh <- SearchResponse{
-			Err: err,
-		}
-		close(retCh)
-		return retCh
-	}
-
-	go func() {
-		defer close(retCh)
-		message := <-c
-
-		responseCode := pdu.GetResponseCode(message)
-		if responseCode == pdu.CODE_OK_REQUEST {
-			channels := make(chan string)
-			retCh <- SearchResponse{
-				Channels: channels,
-			}
-			var messages []pdu.RTMQuery
-			messages = append(messages, message)
-			for message = range c {
-				messages = append(messages, message)
-			}
-
-			for _, message = range messages {
-				var response pdu.SearchBodyResponse
-				json.Unmarshal(message.Body, &response)
-
-				for _, channel := range response.Channels {
-					channels <- channel
-				}
-			}
-		} else {
-			err := pdu.GetResponseError(message)
-			retCh <- SearchResponse{
-				Err: RTMError{
-					Code:   ERROR_CODE_APPLICATION,
-					Reason: err,
-				},
-			}
-		}
-	}()
-
-	return retCh
-}
-
 // Checks if the client is connected
 func (rtm *RTMClient) IsConnected() bool {
 	if rtm.fsm.CurrentState() == STATE_CONNECTED {

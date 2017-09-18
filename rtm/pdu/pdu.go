@@ -9,7 +9,6 @@ const (
 	CODE_BAD_REQUEST   = -1
 	CODE_OK_REQUEST    = 0
 	CODE_ERROR_REQUEST = 1
-	CODE_DATA_REQUEST  = 2
 )
 
 type RTMQuery struct {
@@ -52,14 +51,6 @@ type DeleteBody struct {
 
 type DeleteBodyResponse struct {
 	Position string `json:"position"`
-}
-
-type SearchBody struct {
-	Prefix string `json:"prefix"`
-}
-
-type SearchBodyResponse struct {
-	Channels []string `json:"channels"`
 }
 
 type SubscribeBody struct {
