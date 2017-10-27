@@ -286,7 +286,7 @@ func (rtm *RTMClient) GetSubscription(subscriptionId string) (*subscription.Subs
 func (rtm *RTMClient) Publish(channel string, message interface{}) error {
 	_, err := rtm.socketSend("rtm/publish", &pdu.PublishBody{
 		Channel: channel,
-		Message: rtm.ConvertToRawJson(message),
+		Message: message,
 	}, NOACK)
 	return err
 }
@@ -299,7 +299,7 @@ func (rtm *RTMClient) PublishAck(channel string, message interface{}) <-chan Pub
 
 	c, err := rtm.socketSend("rtm/publish", &pdu.PublishBody{
 		Channel: channel,
-		Message: rtm.ConvertToRawJson(message),
+		Message: message,
 	}, ACK)
 	if err != nil {
 		retCh <- PublishResponse{
@@ -342,7 +342,7 @@ func (rtm *RTMClient) Write(channel string, message interface{}) <-chan WriteRes
 
 	c, err := rtm.socketSend("rtm/write", &pdu.WriteBody{
 		Channel: channel,
-		Message: rtm.ConvertToRawJson(message),
+		Message: message,
 	}, ACK)
 
 	if err != nil {
@@ -788,6 +788,9 @@ func (rtm *RTMClient) socketSend(action string, body interface{}, ack bool) (<-c
 		}
 	}
 
+	var ch <-chan pdu.RTMQuery
+	var err error
+
 	rawBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, RTMError{
@@ -795,8 +798,6 @@ func (rtm *RTMClient) socketSend(action string, body interface{}, ack bool) (<-c
 			Reason: err,
 		}
 	}
-
-	var ch <-chan pdu.RTMQuery
 
 	if ack {
 		ch, err = rtm.conn.SendAck(action, rawBody)

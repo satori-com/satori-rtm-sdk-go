@@ -18,8 +18,8 @@ type RTMQuery struct {
 }
 
 type PublishBody struct {
-	Channel string          `json:"channel"`
-	Message json.RawMessage `json:"message,RawMessage"`
+	Channel string      `json:"channel"`
+	Message interface{} `json:"message"`
 }
 
 type PublishBodyResponse struct {
@@ -27,8 +27,8 @@ type PublishBodyResponse struct {
 }
 
 type WriteBody struct {
-	Channel string          `json:"channel"`
-	Message json.RawMessage `json:"message,RawMessage"`
+	Channel string      `json:"channel"`
+	Message interface{} `json:"message"`
 }
 
 type WriteBodyResponse struct {
