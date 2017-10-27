@@ -1,5 +1,7 @@
-v1.1.0 (???)
+v1.1.0 (2017-10-27)
 -------------------
+* Add ability to publish and receive binary data. Check README and examples
+ to get more information;
 * Add support of HTTPS proxy;
 * Get rid of CODE_DATA_REQUEST response code.
 
