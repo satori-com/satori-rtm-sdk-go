@@ -2,6 +2,7 @@ package rtm
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
 	"testing"
 )
@@ -169,6 +170,46 @@ func TestRTM_Read_Double(t *testing.T) {
 
 	if string(c.Response.Message) != "\"привет2\"" {
 		t.Fatal("Wrong reading order")
+	}
+}
+
+func TestRTM_Read_Binary(t *testing.T) {
+	client, err := getRTM()
+	if err != nil {
+		t.Skip("Unable to find credentials. Skip test")
+	}
+	defer client.Stop()
+	go client.Start()
+
+	if err = waitForConnected(client); err != nil {
+		t.Fatal(err)
+	}
+
+	channel := getChannel()
+
+	type Frame struct {
+		Id      int
+		Head    []byte
+		Payload []uint32
+	}
+
+	head := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	payload := []uint32{2341253, 6145234, 1234151, 312416146}
+	frame := Frame{
+		Id:      42,
+		Head:    head,
+		Payload: payload,
+	}
+
+	<-client.PublishAck(channel, frame)
+	c := <-client.Read(channel)
+	if c.Err != nil {
+		t.Fatal(err)
+	}
+	var newFrame Frame
+	json.Unmarshal(c.Response.Message, &newFrame)
+	if !reflect.DeepEqual(newFrame.Head, head) || !reflect.DeepEqual(newFrame.Payload, payload) {
+		t.Fatal("Wrong binary message received", string(c.Response.Message))
 	}
 }
 
