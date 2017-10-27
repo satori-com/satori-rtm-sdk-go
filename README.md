@@ -61,6 +61,32 @@ $ DEBUG_SATORI_SDK=true go run <your_app.go>
 ```
 
 
+## Publish/Receive Binary Data
+
+The SDK allows to publish and receive Binary data:
+```
+type Frame struct {
+    Id int,
+    Payload []uint8
+}
+
+frame := Frame{
+    Id 1,
+    Payload []uint8{42,14,11,255,100}
+}
+client.Publish("channel", frame)
+```
+
+You do not need to do something special to decode binary message:
+```
+// Inside listener OnData: func(data pdu.SubscriptionData)
+for _, message := range data.Messages {
+    var frame Frame
+    json.Unmarshal(message, &frame)
+    fmt.Printf("%+v\n", frame)
+}
+```
+
 ## Using Proxy
 
 The SDK supports working through a proxy.
